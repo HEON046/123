@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인생 약탈 — PVP 시뮬레이터</title>
+<style>
+:root {
+  --bg: #0d0d11;
+  --surface: #14141a;
+  --surface2: #1c1c24;
+  --surface3: #22222c;
+  --border: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.13);
+  --text: #e4e2f0;
+  --text-muted: #6e6c84;
+  --text-dim: #3a3850;
+  --accent: #7c6af7;
+  --red: #e05060;
+  --blue: #4a9eff;
+  --green: #40c080;
+  --warn: #f0a030;
+  --yellow: #ffd700;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh;}
+
+nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;height:52px;gap:0;}
+.nav-logo{font-size:15px;font-weight:700;color:var(--text);margin-right:28px;white-space:nowrap;}
+.nav-logo span{color:var(--accent);}
+.nav-tab{padding:0 16px;height:52px;display:flex;align-items:center;font-size:13px;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+
+.page{display:none;padding:24px 28px;max-width:1100px;margin:0 auto;}
+.page.active{display:block;}
+.page-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--text-muted);margin-bottom:20px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;}
+
+label.lbl{font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;}
+input[type=text],input[type=number],select{background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-size:13px;padding:7px 10px;outline:none;transition:border-color .15s;width:100%;}
+input:focus,select:focus{border-color:var(--accent);}
+select option{background:#1c1c24;}
+.form-row{display:grid;gap:8px;margin-bottom:8px;}
+.g2{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr 1fr 1fr;}
+
+.btn{border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:none;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{opacity:.85;}
+.btn-ghost{background:none;border:1px solid var(--border-strong);color:var(--text-muted);}.btn-ghost:hover{border-color:var(--accent);color:var(--text);}
+.btn-danger{background:none;border:none;color:var(--text-dim);font-size:18px;padding:2px 6px;cursor:pointer;}.btn-danger:hover{color:var(--red);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+
+.tier-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.t-일반{background:rgba(136,136,136,.15);color:#888;}
+.t-고급{background:rgba(74,158,255,.15);color:#4a9eff;}
+.t-희귀{background:rgba(168,85,247,.15);color:#a855f7;}
+.t-영웅{background:rgba(245,158,11,.15);color:#f59e0b;}
+.t-전설{background:rgba(239,68,68,.15);color:#ef4444;}
+.t-서사{background:rgba(236,72,153,.15);color:#ec4899;}
+
+.stat-pill{display:inline-block;background:var(--surface3);border-radius:4px;padding:1px 6px;margin:1px 2px;font-size:11px;}
+.stat-pill.pen{background:rgba(124,106,247,.2);color:#a89eff;}
+.stat-pill.crit{background:rgba(240,160,48,.15);color:#f0c060;}
+.stat-pill.dmg{background:rgba(224,80,96,.15);color:#e88;}
+.stat-pill.def{background:rgba(74,158,255,.12);color:#7ac;}
+.stat-pill.hp{background:rgba(64,192,128,.12);color:#6d9;}
+
+/* ===== BATTLE ARENA ===== */
+#arena-wrap{
+  background: linear-gradient(180deg, #1a1020 0%, #0d1a0d 60%, #1a1a0a 100%);
+  border:1px solid var(--border);border-radius:12px;
+  position:relative;overflow:hidden;
+  height:360px;margin-bottom:16px;
+}
+
+/* 배경 레이어 */
+#arena-wrap::before{
+  content:'';position:absolute;inset:0;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 32px),
+              repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 32px);
+}
+
+/* 바닥 */
+#arena-wrap::after{
+  content:'';position:absolute;bottom:100px;left:0;right:0;height:3px;
+  background:rgba(255,255,255,0.06);
+}
+
+.fighter-wrap{position:absolute;bottom:103px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+#fighter-a{left:100px;}
+#fighter-b{right:100px;}
+
+/* 픽셀 캐릭터 캔버스 */
+.char-canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
+
+/* HP 바 */
+.arena-hp-bar{width:110px;}
+.arena-hp-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+.arena-hp-label .name{font-weight:700;}
+.name-a{color:var(--blue);}.name-b{color:var(--red);}
+.arena-hp-track{height:7px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
+.arena-hp-fill{height:100%;border-radius:3px;transition:width 0.3s ease;}
+.fill-a{background:var(--blue);}.fill-b{background:var(--red);}
+
+/* 데미지 숫자 */
+.dmg-float{
+  position:absolute;font-size:14px;font-weight:900;
+  font-family:monospace;letter-spacing:1px;
+  pointer-events:none;
+  animation: floatUp 0.9s ease-out forwards;
+  text-shadow: 0 0 8px currentColor;
+  z-index:10;
+}
+@keyframes floatUp{
+  0%{transform:translateY(0) scale(1);opacity:1;}
+  60%{transform:translateY(-40px) scale(1.2);opacity:1;}
+  100%{transform:translateY(-70px) scale(0.8);opacity:0;}
+}
+
+/* 화면 흔들기 */
+@keyframes shakeA{0%,100%{left:100px;}25%{left:88px;}75%{left:112px;}}
+@keyframes shakeB{0%,100%{right:100px;}25%{right:88px;}75%{right:112px;}}
+.shake-a{animation:shakeA 0.15s ease;}
+.shake-b{animation:shakeB 0.15s ease;}
+
+/* 공격 모션 */
+@keyframes attackA{0%,100%{left:100px;}50%{left:210px;}}
+@keyframes attackB{0%,100%{right:100px;}50%{right:210px;}}
+.attack-a{animation:attackA 0.2s ease;}
+.attack-b{animation:attackB 0.2s ease;}
+
+/* 승리 배너 */
+#win-banner{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.85);border:2px solid var(--accent);border-radius:10px;
+  padding:16px 32px;text-align:center;display:none;z-index:20;
+}
+#win-banner .win-title{font-size:20px;font-weight:900;margin-bottom:4px;}
+#win-banner .win-sub{font-size:12px;color:var(--text-muted);}
+
+/* VS */
+#vs-text{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
+  font-size:28px;font-weight:900;color:rgba(255,255,255,0.08);
+  font-family:monospace;letter-spacing:4px;
+}
+
+/* 전투 로그 */
+.battle-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;max-height:200px;overflow-y:auto;margin-bottom:16px;}
+.log-entry{font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);line-height:1.6;}
+.log-entry:last-child{border-bottom:none;}
+.log-a{color:var(--blue);font-weight:600;}.log-b{color:var(--red);font-weight:600;}
+.log-crit{color:var(--warn);font-weight:700;}
+.log-pen{color:var(--accent);}
+.log-result{font-size:14px;font-weight:700;padding:8px 0;text-align:center;}
+.log-win-a{color:var(--blue);}.log-win-b{color:var(--red);}
+
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.result-card{background:var(--surface2);border-radius:8px;padding:10px 14px;text-align:center;}
+.result-card .r-label{font-size:11px;color:var(--text-muted);margin-bottom:4px;}
+.result-card .r-val{font-size:18px;font-weight:700;}
+
+.upgrade-table{width:100%;border-collapse:collapse;margin-top:12px;}
+.upgrade-table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+.upgrade-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;}
+.upgrade-table tr:last-child td{border-bottom:none;}
+.upgrade-table tr:hover td{background:var(--surface2);}
+.danger-zone td{background:rgba(224,80,96,0.08)!important;color:var(--red);}
+
+.formula-table{width:100%;border-collapse:collapse;}
+.formula-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.formula-table tr:last-child td{border-bottom:none;}
+.formula-table input{width:80px;}
+
+.items-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.item-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.item-row .item-name{font-weight:600;font-size:13px;flex:1;}
+.item-stats{font-size:11px;color:var(--text-muted);flex:2;line-height:1.8;}
+
+hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">인생 약탈 <span>/ PVP 시뮬레이터</span></div>
+  <div class="nav-tab active" onclick="showPage('sim',this)">⚔️ 1v1 시뮬레이터</div>
+  <div class="nav-tab" onclick="showPage('upgrade',this)">🔨 강화 계산기</div>
+  <div class="nav-tab" onclick="showPage('items',this)">📦 아이템 관리</div>
+  <div class="nav-tab" onclick="showPage('formula',this)">⚙️ 공식 설정</div>
+</nav>
+
+<!-- ===== 1v1 시뮬레이터 ===== -->
+<div class="page active" id="page-sim">
+  <div class="page-title">1v1 시뮬레이터</div>
+  <div class="page-sub">두 플레이어 장비를 설정하고 전투를 시작하세요.</div>
+
+  <!-- 장비 설정 -->
+  <div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:12px;margin-bottom:16px;align-items:start;">
+    <div class="card">
+      <div class="card-title" style="color:var(--blue);">플레이어 A</div>
+      <div class="form-row g2">
+        <div><label class="lbl">아이템 불러오기</label><select id="a-preset" onchange="loadPreset('a')"><option value="">직접 입력</option></select></div>
+        <div><label class="lbl">생명 (HP +N)</label><input type="number" id="a-life" value="0" min="0"></div>
+      </div>
+      <div class="form-row g3">
+        <div><label class="lbl">타격</label><input type="number" id="a-dmg" value="0" min="0"></div>
+        <div><label class="lbl">치명타</label><input type="number" id="a-fatal" value="0" min="0" max="100"></div>
+        <div><label class="lbl">크리티컬 확률 %</label><input type="number" id="a-crit" value="0" min="0" max="100"></div>
+      </div>
+      <div class="form-row g3">
+        <div><label class="lbl">크리티컬 대미지</label><input type="number" id="a-critdmg" value="0" min="0"></div>
+        <div><label class="lbl">관통</label><input type="number" id="a-pen" value="0" min="0"></div>
+        <div><label class="lbl">방어도</label><input type="number" id="a-def" value="0" min="0"></div>
+      </div>
+      <div class="form-row g3">
+        <div><label class="lbl">재생</label><input type="number" id="a-regen" value="0" min="0"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;padding-top:40px;font-size:18px;font-weight:900;color:var(--text-dim);">VS</div>
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">플레이어 B</div>
+      <div class="form-row g2">
+        <div><label class="lbl">아이템 불러오기</label><select id="b-preset" onchange="loadPreset('b')"><option value="">직접 입력</option></select></div>
+        <div><label class="lbl">생명 (HP +N)</label><input type="number" id="b-life" value="0" min="0"></div>
+      </div>
+      <div class="form-row g3">
+        <div><label class="lbl">타격</label><input type="number" id="b-dmg" value="0" min="0"></div>
+        <div><label class="lbl">치명타</label><input type="number" id="b-fatal" value="0" min="0" max="100"></div>
+        <div><label class="lbl">크리티컬 확률 %</label><input type="number" id="b-crit" value="0" min="0" max="100"></div>
+      </div>
+      <div class="form-row g3">
+        <div><label class="lbl">크리티컬 대미지</label><input type="number" id="b-critdmg" value="0" min="0"></div>
+        <div><label class="lbl">관통</label><input type="number" id="b-pen" value="0" min="0"></div>
+        <div><label class="lbl">방어도</label><input type="number" id="b-def" value="0" min="0"></div>
+      </div>
+      <div class="form-row g3">
+        <div><label class="lbl">재생</label><input type="number" id="b-regen" value="0" min="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전투 버튼 -->
+  <div style="display:flex;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="startAnimatedBattle()">⚔️ 전투 시작</button>
+    <button class="btn btn-ghost" onclick="resetArena()">초기화</button>
+  </div>
+
+  <!-- 아레나 -->
+  <div id="arena-wrap">
+    <div id="vs-text">VS</div>
+    <div class="fighter-wrap" id="fighter-a">
+      <canvas class="char-canvas" id="canvas-a" width="80" height="80"></canvas>
+      <div class="arena-hp-bar">
+        <div class="arena-hp-label"><span class="name name-a">플레이어 A</span><span id="arena-a-hp-text" style="color:var(--text-muted);font-size:10px;">—</span></div>
+        <div class="arena-hp-track"><div class="arena-hp-fill fill-a" id="arena-a-hp" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="fighter-wrap" id="fighter-b">
+      <canvas class="char-canvas" id="canvas-b" width="80" height="80"></canvas>
+      <div class="arena-hp-bar">
+        <div class="arena-hp-label"><span class="name name-b">플레이어 B</span><span id="arena-b-hp-text" style="color:var(--text-muted);font-size:10px;">—</span></div>
+        <div class="arena-hp-track"><div class="arena-hp-fill fill-b" id="arena-b-hp" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div id="win-banner">
+      <div class="win-title" id="win-title">—</div>
+      <div class="win-sub" id="win-sub">—</div>
+    </div>
+  </div>
+
+  <!-- 수치 요약 패널 -->
+  <div id="stats-summary" style="display:none; margin-bottom:16px;">
+    <!-- 상단 승률 바 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+        <span class="name-a" style="font-weight:700;" id="sum-win-a-label">A —%</span>
+        <span style="color:var(--text-muted);font-size:11px;">100회 시뮬레이션</span>
+        <span class="name-b" style="font-weight:700;" id="sum-win-b-label">B —%</span>
+      </div>
+      <div style="height:10px;background:var(--surface3);border-radius:5px;overflow:hidden;display:flex;">
+        <div id="win-bar-a" style="height:100%;background:var(--blue);transition:width .5s;"></div>
+        <div id="win-bar-b" style="height:100%;background:var(--red);transition:width .5s;"></div>
+      </div>
+    </div>
+
+    <!-- 수치 카드 그리드 -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;">
+      <div class="result-card"><div class="r-label">평균 전투 턴</div><div class="r-val" id="sum-turns" style="color:var(--text);">—</div></div>
+      <div class="result-card"><div class="r-label">A 평균 잔여 HP</div><div class="r-val" id="sum-a-hp" style="color:var(--blue);">—</div></div>
+      <div class="result-card"><div class="r-label">B 평균 잔여 HP</div><div class="r-val" id="sum-b-hp" style="color:var(--red);">—</div></div>
+      <div class="result-card"><div class="r-label">A 크리 기여도</div><div class="r-val" id="sum-a-crit" style="color:var(--warn);">—</div></div>
+      <div class="result-card"><div class="r-label">B 크리 기여도</div><div class="r-val" id="sum-b-crit" style="color:var(--warn);">—</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+      <div class="result-card"><div class="r-label">A 평균 DPS</div><div class="r-val" id="sum-a-dps" style="color:var(--text);">—</div></div>
+      <div class="result-card"><div class="r-label">B 평균 DPS</div><div class="r-val" id="sum-b-dps" style="color:var(--text);">—</div></div>
+      <div class="result-card"><div class="r-label">A 관통 기여</div><div class="r-val" id="sum-a-pen" style="color:var(--accent);">—</div></div>
+      <div class="result-card"><div class="r-label">B 관통 기여</div><div class="r-val" id="sum-b-pen" style="color:var(--accent);">—</div></div>
+    </div>
+
+    <!-- 밸런스 코멘트 -->
+    <div id="balance-comments" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+
+  <!-- 로그 -->
+  <div class="battle-log" id="battle-log">
+    <div style="text-align:center;color:var(--text-dim);padding:16px;font-size:13px;">전투 시작 버튼을 눌러보세요</div>
+  </div>
+</div>
+
+<!-- ===== 강화 계산기 ===== -->
+<div class="page" id="page-upgrade">
+  <div class="page-title">강화 계산기</div>
+  <div class="page-sub">강화 단계별 스탯 변화를 확인하세요.</div>
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;">
+    <div class="card">
+      <div class="card-title">기본 설정</div>
+      <div class="form-row"><div><label class="lbl">아이템 불러오기</label><select id="upg-preset" onchange="loadUpgradePreset()"><option value="">직접 입력</option></select></div></div>
+      <div class="form-row g2">
+        <div><label class="lbl">기본 타격</label><input type="number" id="upg-dmg" value="0" min="0"></div>
+        <div><label class="lbl">기본 치명타%</label><input type="number" id="upg-crit" value="0" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">기본 크리뎀</label><input type="number" id="upg-critdmg" value="0" min="0"></div>
+        <div><label class="lbl">기본 관통</label><input type="number" id="upg-pen" value="0" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">기본 방어도</label><input type="number" id="upg-def" value="0" min="0"></div>
+        <div><label class="lbl">기본 HP</label><input type="number" id="upg-hp" value="20" min="1"></div>
+      </div>
+      <hr class="div">
+      <div class="card-title">강화 옵션</div>
+      <div class="form-row g2">
+        <div><label class="lbl">최대 강화 횟수</label><input type="number" id="upg-max" value="5" min="1" max="20"></div>
+        <div><label class="lbl">파괴 구간 (이상)</label><input type="number" id="upg-break" value="0" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="lbl">강화 타입</label>
+          <select id="upg-type">
+            <option value="dmg">타격 +N</option><option value="crit">치명타 +N%</option>
+            <option value="critdmg">크리티컬 대미지 +N</option><option value="pen">관통 +N</option><option value="def">방어도 +N</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">강화당 증가량</label><input type="number" id="upg-amount" value="1" min="0.1" step="0.1"></div>
+        <div><label class="lbl">성공률 %</label><input type="number" id="upg-rate" value="100" min="1" max="100"></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="calcUpgrade()">계산하기</button>
+    </div>
+    <div class="card"><div class="card-title">단계별 스탯</div><div id="upgrade-result"><div style="text-align:center;color:var(--text-dim);padding:40px;font-size:13px;">왼쪽에서 설정 후 계산하기를 눌러보세요</div></div></div>
+  </div>
+</div>
+
+<!-- ===== 아이템 관리 ===== -->
+<div class="page" id="page-items">
+  <div class="page-title">아이템 관리</div>
+  <div class="page-sub">아이템을 등록해두면 시뮬레이터에서 바로 불러올 수 있어요.</div>
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;">
+    <div class="card">
+      <div class="card-title">새 아이템 등록</div>
+      <div class="form-row"><div><label class="lbl">이름</label><input type="text" id="item-name" placeholder="예: 용의 검"></div></div>
+      <div class="form-row g2">
+        <div><label class="lbl">등급</label><select id="item-tier"><option>일반</option><option>고급</option><option>희귀</option><option>영웅</option><option>전설</option><option>서사</option></select></div>
+        <div><label class="lbl">종류</label><select id="item-type"><option>검</option><option>활</option><option>지팡이</option><option>갑옷</option><option>기타</option></select></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">생명 (HP +N)</label><input type="number" id="item-life" value="0" min="0"></div>
+        <div><label class="lbl">타격</label><input type="number" id="item-dmg" value="0" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">치명타</label><input type="number" id="item-fatal" value="0" min="0"></div>
+        <div><label class="lbl">크리티컬 확률 %</label><input type="number" id="item-crit" value="0" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">크리티컬 대미지</label><input type="number" id="item-critdmg" value="0" min="0"></div>
+        <div><label class="lbl">관통</label><input type="number" id="item-pen" value="0" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">방어도</label><input type="number" id="item-def" value="0" min="0"></div>
+        <div><label class="lbl">재생</label><input type="number" id="item-regen" value="0" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="lbl">포인트 비용</label><input type="number" id="item-points" value="0" min="0"></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="addItem()">등록</button>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="exportItems()">JSON 저장</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="document.getElementById('file-input').click()">JSON 불러오기</button>
+      </div>
+    </div>
+    <div id="items-list-wrap"><div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 등록된 아이템이 없어요</div></div>
+  </div>
+</div>
+
+<!-- ===== 공식 설정 ===== -->
+<div class="page" id="page-formula">
+  <div class="page-title">공식 설정</div>
+  <div class="page-sub">스탯 1당 실제 효과를 서버 설정에 맞게 조정하세요.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-title">공격 스탯</div>
+      <table class="formula-table">
+        <tr>
+          <td style="color:var(--text-muted);">타격 1당 대미지</td>
+          <td><input type="number" id="f-base-dmg" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">타격 16 × 1 = 16 대미지</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">치명타 발동 고정 추가 대미지</td>
+          <td><input type="number" id="f-fatal-dmg" value="4" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">발동 시 무조건 +N</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">크리티컬 대미지 1당 추가 대미지</td>
+          <td><input type="number" id="f-critdmg-mult" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">크리뎀 3 × 1 = 3 추가</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">관통 1당 고정 대미지</td>
+          <td><input type="number" id="f-pen-mult" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">방어 무시, 관통 3 × 1 = 3</td>
+        </tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">방어 / 생존 스탯</div>
+      <table class="formula-table">
+        <tr>
+          <td style="color:var(--text-muted);">기본 HP</td>
+          <td><input type="number" id="f-base-hp" value="30" min="1" step="1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">모든 플레이어 기본값</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">생명 1당 HP 증가</td>
+          <td><input type="number" id="f-life-mult" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">생명 10 × 1 = HP +10</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">방어도 1당 피해 감소</td>
+          <td><input type="number" id="f-def-mult" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">방어도 5 × 1 = 5 감소</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">재생 1당 HP 회복량</td>
+          <td><input type="number" id="f-regen-mult" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">5턴마다 재생 N × 배율</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">재생 쿨타임 (턴)</td>
+          <td><input type="number" id="f-regen-cd" value="5" min="1" step="1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">1턴 = 1초</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+    <div class="card">
+      <div class="card-title">확률 스탯</div>
+      <table class="formula-table">
+        <tr>
+          <td style="color:var(--text-muted);">치명타 1당 발동 확률</td>
+          <td><input type="number" id="f-fatal-rate" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">치명타 10 × 1 = 10%</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted);">크리티컬 확률 1당 발동 확률</td>
+          <td><input type="number" id="f-crit-rate" value="1" min="0" step="0.1" style="width:80px;"></td>
+          <td style="color:var(--text-dim);font-size:11px;">크리확률 5 × 1 = 5%</td>
+        </tr>
+      </table>
+    </div>
+    <div style="padding:14px 16px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-muted);line-height:1.8;">
+      💡 <strong style="color:var(--text);">공격 공식</strong><br>
+      대미지 = 타격 × 배율<br>
+      + (치명타 발동 시) 고정 추가 대미지<br>
+      + (크리티컬 발동 시) 크리뎀 × 배율<br>
+      − 방어도 × 배율<br>
+      + 관통 × 배율 (방어 무시)<br><br>
+      치명타와 크리티컬은 동시 발동 가능
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".json" style="display:none" onchange="loadFile(event)">
+
+<script>
+let items = [];
+let battleQueue = [];
+let battlePlaying = false;
+
+// ===== NAV =====
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='sim'||id==='upgrade') refreshPresets();
+}
+
+// ===== PIXEL CHARACTER DRAWING =====
+const CHAR_IMG = new Image();
+CHAR_IMG.src = 'data:image/png;base64,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';
+let imgLoaded = false;
+const DEAD_IMG = new Image();
+DEAD_IMG.src = 'data:image/png;base64,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';
+CHAR_IMG.onload = () => { imgLoaded = true; drawChar('canvas-a','#4a9eff',true,'idle'); drawChar('canvas-b','#e05060',false,'idle'); };
+
+function drawChar(canvasId, teamColor, facingRight, state) {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,80,80);
+  ctx.imageSmoothingEnabled = false;
+
+  if(!imgLoaded) {
+    // 이미지 로드 전 fallback
+    ctx.fillStyle = '#5aaa3a';
+    ctx.fillRect(16,0,32,32);
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(12,32,40,28);
+    ctx.fillStyle = '#243068';
+    ctx.fillRect(12,60,40,20);
+    return;
+  }
+
+  const flip = !facingRight;
+  if(flip){ ctx.save(); ctx.translate(80,0); ctx.scale(-1,1); }
+
+  // 원본 이미지 크기에서 캐릭터 영역 잘라서 그리기
+  // 이미지 전체를 64x96에 맞게 그림
+  const iw = CHAR_IMG.naturalWidth;
+  const ih = CHAR_IMG.naturalHeight;
+
+  if(state === 'attack') {
+    // 공격: 살짝 앞으로 기울인 느낌 (x 오프셋)
+    ctx.drawImage(CHAR_IMG, 0, 0, iw, ih, 4, 0, 60, 96);
+  } else if(state === 'hit') {
+    // 피격: 살짝 뒤로
+    ctx.globalAlpha = 0.7;
+    ctx.drawImage(CHAR_IMG, 0, 0, iw, ih, 0, 0, 80, 80);
+    ctx.globalAlpha = 1;
+    // 빨간 플래시
+    ctx.fillStyle = 'rgba(255,60,60,0.35)';
+    ctx.fillRect(0,0,64,96);
+  } else {
+    ctx.drawImage(CHAR_IMG, 0, 0, iw, ih, 0, 0, 80, 80);
+  }
+
+  // 팀 색 머리띠
+  ctx.fillStyle = teamColor;
+  ctx.globalAlpha = 0.85;
+  ctx.fillRect(20, 2, 40, 4);
+  ctx.globalAlpha = 1;
+
+  if(flip) ctx.restore();
+}
+
+function drawDeadChar(canvasId, teamColor) {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,80,80);
+  ctx.imageSmoothingEnabled = false;
+  if(DEAD_IMG.complete) {
+    ctx.drawImage(DEAD_IMG, 0, 0, DEAD_IMG.naturalWidth, DEAD_IMG.naturalHeight, 0, 0, 80, 80);
+  } else {
+    DEAD_IMG.onload = () => ctx.drawImage(DEAD_IMG, 0, 0, DEAD_IMG.naturalWidth, DEAD_IMG.naturalHeight, 0, 0, 80, 80);
+  }
+  // 팀 색 표시
+  ctx.fillStyle = teamColor;
+  ctx.globalAlpha = 0.7;
+  ctx.fillRect(20, 2, 40, 4);
+  ctx.globalAlpha = 1;
+}
+
+
+// ===== FORMULA =====
+function getFormula(){
+  return {
+    baseDmg:    parseFloat(document.getElementById('f-base-dmg').value)||1,
+    fatalDmg:   parseFloat(document.getElementById('f-fatal-dmg').value)||4,
+    critDmgMult:parseFloat(document.getElementById('f-critdmg-mult').value)||1,
+    penMult:    parseFloat(document.getElementById('f-pen-mult').value)||1,
+    baseHp:     parseFloat(document.getElementById('f-base-hp').value)||30,
+    lifeMult:   parseFloat(document.getElementById('f-life-mult').value)||1,
+    defMult:    parseFloat(document.getElementById('f-def-mult').value)||1,
+    regenMult:  parseFloat(document.getElementById('f-regen-mult').value)||1,
+    regenCd:    parseInt(document.getElementById('f-regen-cd').value)||5,
+    fatalRate:  parseFloat(document.getElementById('f-fatal-rate').value)||1,
+    critRate:   parseFloat(document.getElementById('f-crit-rate').value)||1,
+  };
+}
+
+function calcDamage(atk, def, f){
+  const isFatal = Math.random()*100 < atk.fatal * f.fatalRate;
+  const isCrit  = Math.random()*100 < atk.crit  * f.critRate;
+  let dmg = atk.dmg * f.baseDmg;
+  if(isFatal) dmg += f.fatalDmg;
+  if(isCrit)  dmg += atk.critdmg * f.critDmgMult;
+  const reduced = Math.max(0, dmg - def.def * f.defMult);
+  const total = Math.max(0.1, reduced + atk.pen * f.penMult);
+  return { total, isFatal, isCrit, penDmg: atk.pen * f.penMult };
+}
+
+// ===== SIMULATOR =====
+function getStats(side){
+  const f = getFormula();
+  return {
+    hp:      f.baseHp + (parseFloat(document.getElementById(side+'-life').value)||0) * f.lifeMult,
+    life:    parseFloat(document.getElementById(side+'-life').value)||0,
+    dmg:     parseFloat(document.getElementById(side+'-dmg').value)||0,
+    fatal:   parseFloat(document.getElementById(side+'-fatal').value)||0,
+    crit:    parseFloat(document.getElementById(side+'-crit').value)||0,
+    critdmg: parseFloat(document.getElementById(side+'-critdmg').value)||0,
+    pen:     parseFloat(document.getElementById(side+'-pen').value)||0,
+    def:     parseFloat(document.getElementById(side+'-def').value)||0,
+    regen:   parseFloat(document.getElementById(side+'-regen').value)||0,
+  };
+}
+
+function simulate(aBase, bBase, f, detailed){
+  let aHp=aBase.hp, bHp=bBase.hp;
+  const log=[], maxTurns=200;
+  let turn=0;
+  let aTotalDmg=0, bTotalDmg=0, aCritDmg=0, bCritDmg=0, aPenDmg=0, bPenDmg=0;
+  while(aHp>0&&bHp>0&&turn<maxTurns){
+    turn++;
+    const aDmg=calcDamage(aBase,bBase,f);
+    const bDmg=calcDamage(bBase,aBase,f);
+    aHp-=bDmg.total; bHp-=aDmg.total;
+    aTotalDmg+=aDmg.total; bTotalDmg+=bDmg.total;
+    if(aDmg.isCrit) aCritDmg+=aDmg.total;
+    if(bDmg.isCrit) bCritDmg+=bDmg.total;
+    aPenDmg+=aDmg.penDmg; bPenDmg+=bDmg.penDmg;
+    // 재생: regenCd 턴마다 발동
+    if(turn % f.regenCd === 0){
+      if(aBase.regen > 0) aHp = Math.min(aBase.hp, aHp + aBase.regen * f.regenMult);
+      if(bBase.regen > 0) bHp = Math.min(bBase.hp, bHp + bBase.regen * f.regenMult);
+    }
+    if(detailed) log.push({turn,aDmg,bDmg,aHp:Math.max(0,aHp),bHp:Math.max(0,bHp),regenTurn: turn%5===0});
+    if(aHp<=0||bHp<=0) break;
+  }
+  let winner='a';
+  if(aHp<=0&&bHp<=0) winner=aHp>=bHp?'a':'b';
+  else if(aHp<=0) winner='b';
+  else winner='a';
+  return {
+    winner, turns: turn, log,
+    finalAHp: Math.max(0,aHp), finalBHp: Math.max(0,bHp),
+    maxHp_a: aBase.hp, maxHp_b: bBase.hp,
+    aTotalDmg, bTotalDmg, aCritDmg, bCritDmg, aPenDmg, bPenDmg,
+  };
+}
+
+// ===== ANIMATED BATTLE =====
+function startAnimatedBattle(){
+  if(battlePlaying) return;
+  const a=getStats('a'), b=getStats('b'), f=getFormula();
+  const result=simulate(a,b,f,true);
+  battleQueue=result.log;
+  battlePlaying=true;
+
+  // 초기화
+  document.getElementById('win-banner').style.display='none';
+  document.getElementById('stats-summary').style.display='none';
+  document.getElementById('battle-log').innerHTML='';
+  updateHpBars(a.hp,a.hp,b.hp,b.hp);
+
+  // 캐릭터 초기 그리기
+  drawChar('canvas-a','#4a9eff',true,'idle');
+  drawChar('canvas-b','#e05060',false,'idle');
+
+  let idx=0;
+  const logEl=document.getElementById('battle-log');
+
+  function nextTurn(){
+    if(idx>=battleQueue.length){
+      battlePlaying=false;
+      const winner=result.winner;
+      const banner=document.getElementById('win-banner');
+      document.getElementById('win-title').textContent = (winner==='a'?'플레이어 A':'플레이어 B')+' 승리!';
+      document.getElementById('win-title').style.color = winner==='a' ? '#4a9eff' : '#e05060';
+      document.getElementById('win-sub').textContent = result.turns+'턴 만에 결판';
+      banner.style.display='block';
+      if(winner==='b'||result.finalAHp<=0) drawDeadChar('canvas-a','#4a9eff');
+      if(winner==='a'||result.finalBHp<=0) drawDeadChar('canvas-b','#e05060');
+      // 자동으로 100회 통계 실행
+      setTimeout(()=>runSimN(100), 400);
+      return;
+    }
+
+    const entry=battleQueue[idx++];
+    const elA=document.getElementById('fighter-a');
+    const elB=document.getElementById('fighter-b');
+
+    // 양쪽 동시 공격 모션
+    drawChar('canvas-a','#4a9eff',true,'attack');
+    drawChar('canvas-b','#e05060',false,'attack');
+    elA.classList.add('attack-a');
+    elB.classList.add('attack-b');
+
+    setTimeout(()=>{
+      elA.classList.remove('attack-a');
+      elB.classList.remove('attack-b');
+
+      // 양쪽 동시 피격
+      drawChar('canvas-a','#4a9eff',true,'hit');
+      drawChar('canvas-b','#e05060',false,'hit');
+      elA.classList.add('shake-a');
+      elB.classList.add('shake-b');
+
+      // 데미지 숫자 양쪽 동시에
+      spawnDmgFloat(elB, entry.aDmg, true);
+      spawnDmgFloat(elA, entry.bDmg, false);
+
+      // HP 업데이트
+      updateHpBars(entry.aHp, result.maxHp_a, entry.bHp, result.maxHp_b);
+
+      setTimeout(()=>{
+        elA.classList.remove('shake-a');
+        elB.classList.remove('shake-b');
+        drawChar('canvas-a','#4a9eff',true,'idle');
+        drawChar('canvas-b','#e05060',false,'idle');
+      }, 200);
+
+      addLogEntry(entry, result);
+      setTimeout(nextTurn, 700);
+    }, 250);
+  }
+
+  nextTurn();
+}
+
+function spawnDmgFloat(targetEl, dmgData, isA){
+  const arena=document.getElementById('arena-wrap');
+  const rect=targetEl.getBoundingClientRect();
+  const arenaRect=arena.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='dmg-float';
+  el.textContent = (dmgData.isCrit?'💥':'')+Math.round(dmgData.total);
+  el.style.color = dmgData.isCrit ? '#ffd700' : dmgData.penDmg>0 ? '#a89eff' : '#fff';
+  el.style.left = (rect.left - arenaRect.left + 20 + Math.random()*20-10)+'px';
+  el.style.top = (rect.top - arenaRect.top + 20)+'px';
+  arena.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+
+function updateHpBars(aHp, aMax, bHp, bMax){
+  const aPct=Math.max(0,Math.round(aHp/aMax*100));
+  const bPct=Math.max(0,Math.round(bHp/bMax*100));
+  document.getElementById('arena-a-hp').style.width=aPct+'%';
+  document.getElementById('arena-b-hp').style.width=bPct+'%';
+  document.getElementById('arena-a-hp-text').textContent=Math.max(0,aHp.toFixed(1))+'/'+aMax;
+  document.getElementById('arena-b-hp-text').textContent=Math.max(0,bHp.toFixed(1))+'/'+bMax;
+  // 색상 변화
+  const aColor = aPct>50?'#4a9eff':aPct>25?'#f0a030':'#e05060';
+  const bColor = bPct>50?'#e05060':bPct>25?'#f0a030':'#888';
+  document.getElementById('arena-a-hp').style.background=aColor;
+  document.getElementById('arena-b-hp').style.background=bColor;
+}
+
+function addLogEntry(entry, result){
+  const logEl=document.getElementById('battle-log');
+  function dmgStr(d){
+    let s=`<span class="${(d.isFatal||d.isCrit)?'log-crit':''}">${d.total.toFixed(1)}</span>`;
+    if(d.isFatal&&d.isCrit) s+=` <span class="log-crit">💥치명타+크리!</span>`;
+    else if(d.isFatal) s+=` <span style="color:#f0a030;">⚡치명타</span>`;
+    else if(d.isCrit)  s+=` <span class="log-crit">💥크리티컬!</span>`;
+    if(d.penDmg>0) s+=`<span class="log-pen">(관통+${d.penDmg})</span>`;
+    return s;
+  }
+  const div=document.createElement('div');
+  div.className='log-entry';
+  div.innerHTML=`<span style="color:var(--text-muted);">[${entry.turn}턴]</span> <span class="log-a">A</span>→B ${dmgStr(entry.aDmg)} / <span class="log-b">B</span>→A ${dmgStr(entry.bDmg)} &nbsp;|&nbsp; A:${entry.aHp.toFixed(1)} · B:${entry.bHp.toFixed(1)}${entry.regenTurn ? ' <span style="color:var(--green);font-size:11px;">💚재생</span>' : ''}`;
+  logEl.insertBefore(div, logEl.firstChild);
+}
+
+function resetArena(){
+  battlePlaying=false;
+  battleQueue=[];
+  document.getElementById('battle-log').innerHTML='<div style="text-align:center;color:var(--text-dim);padding:16px;font-size:13px;">전투 시작 버튼을 눌러보세요</div>';
+  document.getElementById('win-banner').style.display='none';
+  document.getElementById('stats-summary').style.display='none';
+  document.getElementById('arena-a-hp').style.width='100%';
+  document.getElementById('arena-b-hp').style.width='100%';
+  document.getElementById('arena-a-hp').style.background='var(--blue)';
+  document.getElementById('arena-b-hp').style.background='var(--red)';
+  document.getElementById('arena-a-hp-text').textContent='—';
+  document.getElementById('arena-b-hp-text').textContent='—';
+  drawChar('canvas-a','#4a9eff',true,'idle');
+  drawChar('canvas-b','#e05060',false,'idle');
+}
+
+function runSimN(n){
+  const a=getStats('a'), b=getStats('b'), f=getFormula();
+  let winsA=0, totalTurns=0;
+  let totalAHp=0, totalBHp=0;
+  let totalATotalDmg=0, totalBTotalDmg=0;
+  let totalACritDmg=0, totalBCritDmg=0;
+  let totalAPenDmg=0, totalBPenDmg=0;
+
+  for(let i=0;i<n;i++){
+    const r=simulate(a,b,f,false);
+    if(r.winner==='a') winsA++;
+    totalTurns+=r.turns;
+    totalAHp+=r.finalAHp; totalBHp+=r.finalBHp;
+    totalATotalDmg+=r.aTotalDmg; totalBTotalDmg+=r.bTotalDmg;
+    totalACritDmg+=r.aCritDmg; totalBCritDmg+=r.bCritDmg;
+    totalAPenDmg+=r.aPenDmg; totalBPenDmg+=r.bPenDmg;
+  }
+
+  const winsB=n-winsA;
+  const winRateA=Math.round(winsA/n*100);
+  const winRateB=100-winRateA;
+  const avgTurns=Math.round(totalTurns/n);
+  const avgAHp=(totalAHp/n).toFixed(1);
+  const avgBHp=(totalBHp/n).toFixed(1);
+  const avgADps=(totalATotalDmg/totalTurns).toFixed(1);
+  const avgBDps=(totalBTotalDmg/totalTurns).toFixed(1);
+  const aCritPct=totalATotalDmg>0?Math.round(totalACritDmg/totalATotalDmg*100):0;
+  const bCritPct=totalBTotalDmg>0?Math.round(totalBCritDmg/totalBTotalDmg*100):0;
+  const aPenPct=totalATotalDmg>0?Math.round(totalAPenDmg/totalATotalDmg*100):0;
+  const bPenPct=totalBTotalDmg>0?Math.round(totalBPenDmg/totalBTotalDmg*100):0;
+
+  // 수치 업데이트
+  document.getElementById('sum-win-a-label').textContent=`A ${winRateA}%`;
+  document.getElementById('sum-win-b-label').textContent=`B ${winRateB}%`;
+  document.getElementById('win-bar-a').style.width=winRateA+'%';
+  document.getElementById('win-bar-b').style.width=winRateB+'%';
+  document.getElementById('sum-turns').textContent=avgTurns+'턴';
+  document.getElementById('sum-a-hp').textContent=avgAHp;
+  document.getElementById('sum-b-hp').textContent=avgBHp;
+  document.getElementById('sum-a-crit').textContent=aCritPct+'%';
+  document.getElementById('sum-b-crit').textContent=bCritPct+'%';
+  document.getElementById('sum-a-dps').textContent=avgADps;
+  document.getElementById('sum-b-dps').textContent=avgBDps;
+  document.getElementById('sum-a-pen').textContent=aPenPct+'%';
+  document.getElementById('sum-b-pen').textContent=bPenPct+'%';
+  document.getElementById('stats-summary').style.display='block';
+
+  // 코멘트 생성
+  renderComments({winRateA,winRateB,avgTurns,avgAHp:parseFloat(avgAHp),avgBHp:parseFloat(avgBHp),avgADps:parseFloat(avgADps),avgBDps:parseFloat(avgBDps),aCritPct,bCritPct,aPenPct,bPenPct,a,b});
+}
+
+function renderComments(s){
+  const comments=[];
+
+  // 1. 승률 판정
+  const gap=Math.abs(s.winRateA-s.winRateB);
+  if(gap<=10){
+    comments.push({level:'ok', title:'승률 균형 양호', desc:`A ${s.winRateA}% vs B ${s.winRateB}% — 10% 이내 격차로 비교적 공정한 매치업이에요.`});
+  } else if(gap<=25){
+    const stronger=s.winRateA>s.winRateB?'A':'B';
+    comments.push({level:'warn', title:`${stronger}가 다소 우세`, desc:`승률 격차 ${gap}% — 완전히 불균형하진 않지만, ${stronger}의 핵심 스탯을 소폭 조정해볼 만해요.`});
+  } else {
+    const stronger=s.winRateA>s.winRateB?'A':'B';
+    const weaker=stronger==='A'?'B':'A';
+    comments.push({level:'danger', title:`${stronger} 압도적 우세 — 밸런스 조정 필요`, desc:`승률 격차 ${gap}% — ${stronger}가 거의 일방적이에요. ${stronger}의 타격/관통을 낮추거나 ${weaker}의 방어도를 올려보세요.`});
+  }
+
+  // 2. 전투 길이
+  if(s.avgTurns<=3){
+    comments.push({level:'danger', title:'전투가 너무 짧음', desc:`평균 ${s.avgTurns}턴 — 순식간에 끝나서 플레이 체감이 없어요. 양측 HP를 올리거나 타격을 낮춰보세요.`});
+  } else if(s.avgTurns<=6){
+    comments.push({level:'warn', title:'전투 다소 빠름', desc:`평균 ${s.avgTurns}턴 — 짧은 편이에요. PVP 긴장감을 위해 HP를 약간 올리는 것도 고려해보세요.`});
+  } else if(s.avgTurns>=30){
+    comments.push({level:'warn', title:'전투가 너무 길어짐', desc:`평균 ${s.avgTurns}턴 — 지루해질 수 있어요. 타격을 높이거나 방어도를 낮춰보세요.`});
+  } else {
+    comments.push({level:'ok', title:'전투 길이 적절', desc:`평균 ${s.avgTurns}턴 — PVP 긴장감을 유지하기에 적당한 길이예요.`});
+  }
+
+  // 3. 잔여 HP 격차
+  const hpGap=Math.abs(s.avgAHp-s.avgBHp);
+  const maxHp=Math.max(s.a.hp, s.b.hp);
+  const hpGapPct=Math.round(hpGap/maxHp*100);
+  if(hpGapPct>=40){
+    const dominant=s.avgAHp>s.avgBHp?'A':'B';
+    comments.push({level:'danger', title:`${dominant}가 여유롭게 이김`, desc:`이긴 쪽 평균 잔여 HP가 ${hpGapPct}% 더 높아요 — 일방적인 전투예요. 스탯 차이를 줄여보세요.`});
+  } else if(hpGapPct>=20){
+    const dominant=s.avgAHp>s.avgBHp?'A':'B';
+    comments.push({level:'warn', title:`${dominant} 쪽이 체력 여유 있음`, desc:`잔여 HP 격차 ${hpGapPct}% — 살짝 일방적이에요. 균형 조정을 고려해볼 수 있어요.`});
+  }
+
+  // 4. 크리티컬 기여도
+  if(s.aCritPct>=50||s.bCritPct>=50){
+    const who=s.aCritPct>=50?'A':'B';
+    const pct=who==='A'?s.aCritPct:s.bCritPct;
+    comments.push({level:'warn', title:`${who}의 크리티컬 의존도 높음`, desc:`${who}의 총 대미지 중 ${pct}%가 크리티컬 — 크리 운에 따라 결과가 크게 갈려요. 치명타 확률 또는 크리뎀을 낮추는 게 좋아요.`});
+  } else if(s.aCritPct===0&&s.bCritPct===0&&(s.a.crit>0||s.b.crit>0)){
+    comments.push({level:'warn', title:'크리티컬 영향 거의 없음', desc:'치명타 스탯이 있지만 전투에 영향을 거의 못 주고 있어요. 확률이나 크리뎀 수치를 올려보세요.'});
+  } else {
+    const maxCrit=Math.max(s.aCritPct,s.bCritPct);
+    if(maxCrit>0) comments.push({level:'ok', title:'크리티컬 기여 적절', desc:`최대 ${maxCrit}% 기여 — 크리 운이 밸런스를 크게 흔들지 않는 수준이에요.`});
+  }
+
+  // 5. 관통 기여도
+  const maxPen=Math.max(s.aPenPct,s.bPenPct);
+  if(maxPen>=50){
+    const who=s.aPenPct>=50?'A':'B';
+    comments.push({level:'danger', title:`${who}의 관통이 너무 강함`, desc:`대미지의 ${maxPen}%가 관통에서 발생 — 방어도가 사실상 무의미해요. 관통 수치를 낮추거나 방어도를 올려보세요.`});
+  } else if(maxPen>=30){
+    const who=s.aPenPct>=30?'A':'B';
+    comments.push({level:'warn', title:`${who}의 관통 비중 높음`, desc:`대미지의 ${maxPen}%가 관통 — 방어도 투자 가치가 떨어질 수 있어요.`});
+  } else if(maxPen>0){
+    comments.push({level:'ok', title:'관통 수치 적절', desc:`최대 ${maxPen}% 기여 — 방어도를 완전히 무력화하지 않으면서 관통 옵션 가치를 유지하고 있어요.`});
+  }
+
+  // 6. DPS 격차
+  const dpsDiff=Math.abs(s.avgADps-s.avgBDps);
+  const maxDps=Math.max(s.avgADps,s.avgBDps);
+  if(maxDps>0){
+    const dpsDiffPct=Math.round(dpsDiff/maxDps*100);
+    if(dpsDiffPct>=40){
+      const stronger=s.avgADps>s.avgBDps?'A':'B';
+      comments.push({level:'warn', title:`${stronger}의 DPS가 크게 높음`, desc:`평균 DPS A:${s.avgADps} vs B:${s.avgBDps} — ${dpsDiffPct}% 차이. 타격 수치 균형을 맞춰보세요.`});
+    }
+  }
+
+  // 렌더링
+  const el=document.getElementById('balance-comments');
+  const colors={ok:'var(--green)',warn:'var(--warn)',danger:'var(--red)'};
+  const bg={ok:'rgba(64,192,128,0.08)',warn:'rgba(240,160,48,0.08)',danger:'rgba(224,80,96,0.08)'};
+  const icons={ok:'✅',warn:'⚠️',danger:'🔴'};
+  el.innerHTML=comments.map(c=>`
+    <div style="background:${bg[c.level]};border:1px solid ${colors[c.level]}33;border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start;">
+      <span style="font-size:14px;flex-shrink:0;">${icons[c.level]}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:${colors[c.level]};margin-bottom:2px;">${c.title}</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">${c.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadPreset(side){
+  const idx=parseInt(document.getElementById(side+'-preset').value);
+  if(isNaN(idx)) return;
+  const item=items[idx];
+  document.getElementById(side+'-life').value=item.life||0;
+  document.getElementById(side+'-dmg').value=item.dmg||0;
+  document.getElementById(side+'-fatal').value=item.fatal||0;
+  document.getElementById(side+'-crit').value=item.crit||0;
+  document.getElementById(side+'-critdmg').value=item.critdmg||0;
+  document.getElementById(side+'-pen').value=item.pen||0;
+  document.getElementById(side+'-def').value=item.def||0;
+  document.getElementById(side+'-regen').value=item.regen||0;
+}
+
+// ===== UPGRADE =====
+function loadUpgradePreset(){
+  const idx=parseInt(document.getElementById('upg-preset').value);
+  if(isNaN(idx)) return;
+  const item=items[idx];
+  ['dmg','crit','critdmg','pen','def'].forEach(k=>document.getElementById('upg-'+k).value=item[k]||0);
+  document.getElementById('upg-hp').value=item.hp||20;
+}
+
+function calcUpgrade(){
+  const base={dmg:parseFloat(document.getElementById('upg-dmg').value)||0,crit:parseFloat(document.getElementById('upg-crit').value)||0,critdmg:parseFloat(document.getElementById('upg-critdmg').value)||0,pen:parseFloat(document.getElementById('upg-pen').value)||0,def:parseFloat(document.getElementById('upg-def').value)||0,hp:parseFloat(document.getElementById('upg-hp').value)||20};
+  const maxSteps=parseInt(document.getElementById('upg-max').value)||5;
+  const breakAt=parseInt(document.getElementById('upg-break').value)||0;
+  const type=document.getElementById('upg-type').value;
+  const amount=parseFloat(document.getElementById('upg-amount').value)||1;
+  const rate=parseFloat(document.getElementById('upg-rate').value)||100;
+  const f=getFormula();
+  let rows='';
+  for(let i=0;i<=maxSteps;i++){
+    const cur={...base};cur[type]=+(base[type]+amount*i).toFixed(2);
+    const isDanger=breakAt>0&&i>=breakAt;
+    const avgDmg=cur.dmg*f.baseDmg+(cur.crit/100)*cur.critdmg*f.critDmgMult+cur.pen;
+    rows+=`<tr class="${isDanger?'danger-zone':''}"><td style="font-weight:600;">+${i}강${isDanger?' ⚠️':''}</td><td>${cur.dmg}</td><td>${cur.crit}%</td><td>${cur.critdmg}</td><td style="color:var(--accent);font-weight:600;">${cur.pen}</td><td>${cur.def}</td><td>${cur.hp}</td><td style="color:var(--warn);font-weight:600;">${avgDmg.toFixed(1)}</td><td style="font-size:12px;color:var(--text-muted);">${rate<100?rate+'%':'—'}</td></tr>`;
+  }
+  document.getElementById('upgrade-result').innerHTML=`<div style="overflow-x:auto;"><table class="upgrade-table"><thead><tr><th>단계</th><th>타격</th><th>치명타</th><th>크리뎀</th><th>관통</th><th>방어도</th><th>HP</th><th>예상 DPS</th><th>성공률</th></tr></thead><tbody>${rows}</tbody></table></div>${breakAt>0?`<div style="margin-top:8px;font-size:12px;color:var(--red);">⚠️ +${breakAt}강 이상은 실패 시 파괴 위험</div>`:''}`;
+}
+
+// ===== ITEMS =====
+function addItem(){
+  const name=document.getElementById('item-name').value.trim();
+  if(!name){alert('이름을 입력해주세요');return;}
+  items.push({id:Date.now(),name,
+    tier:document.getElementById('item-tier').value,
+    type:document.getElementById('item-type').value,
+    life:parseFloat(document.getElementById('item-life').value)||0,
+    dmg:parseFloat(document.getElementById('item-dmg').value)||0,
+    fatal:parseFloat(document.getElementById('item-fatal').value)||0,
+    crit:parseFloat(document.getElementById('item-crit').value)||0,
+    critdmg:parseFloat(document.getElementById('item-critdmg').value)||0,
+    pen:parseFloat(document.getElementById('item-pen').value)||0,
+    def:parseFloat(document.getElementById('item-def').value)||0,
+    regen:parseFloat(document.getElementById('item-regen').value)||0,
+    points:parseFloat(document.getElementById('item-points').value)||0,
+  });
+  ['item-name','item-life','item-dmg','item-fatal','item-crit','item-critdmg','item-pen','item-def','item-regen','item-points'].forEach(id=>document.getElementById(id).value='');
+  renderItems();refreshPresets();
+}
+
+function deleteItem(id){items=items.filter(i=>i.id!==id);renderItems();refreshPresets();}
+
+function renderItems(){
+  const wrap=document.getElementById('items-list-wrap');
+  if(items.length===0){wrap.innerHTML='<div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 등록된 아이템이 없어요</div>';return;}
+  wrap.innerHTML='<div class="items-list">'+items.map(item=>{
+    const stats=[item.dmg?`<span class="stat-pill dmg">타격 +${item.dmg}</span>`:'',item.crit?`<span class="stat-pill crit">치명타 +${item.crit}%</span>`:'',item.critdmg?`<span class="stat-pill crit">크리뎀 +${item.critdmg}</span>`:'',item.pen?`<span class="stat-pill pen">관통 +${item.pen}</span>`:'',item.def?`<span class="stat-pill def">방어도 +${item.def}</span>`:''].filter(Boolean).join('');
+    return `<div class="item-row"><span class="tier-badge t-${item.tier}">${item.tier}</span><div class="item-name">${item.name} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${item.type}</span></div><div class="item-stats">${stats||'<span style="color:var(--text-dim);">스탯 없음</span>'}</div><button class="btn-danger" onclick="deleteItem(${item.id})">×</button></div>`;
+  }).join('')+'</div>';
+}
+
+function refreshPresets(){
+  ['a-preset','b-preset','upg-preset'].forEach(id=>{
+    const sel=document.getElementById(id);
+    const prev=sel.value;
+    sel.innerHTML='<option value="">직접 입력</option>'+items.map((item,idx)=>`<option value="${idx}">${item.name} (${item.tier})</option>`).join('');
+    sel.value=prev;
+  });
+}
+
+function exportItems(){
+  const blob=new Blob([JSON.stringify({items},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='인생약탈_아이템.json';a.click();
+}
+
+function loadFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=evt=>{try{const data=JSON.parse(evt.target.result);if(data.items){items=data.items;renderItems();refreshPresets();}}catch{alert('올바른 JSON 파일이 아니에요');}};
+  reader.readAsText(file);e.target.value='';
+}
+
+// 초기 캐릭터 그리기는 CHAR_IMG.onload에서 처리
+</script>
+</body>
+</html>
