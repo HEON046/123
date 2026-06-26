@@ -192,6 +192,15 @@ hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="nav-tab active" onclick="showPage('sim',this)">⚔️ 1v1 시뮬레이터</div>
   <div class="nav-tab" onclick="showPage('upgrade',this)">🔨 강화 계산기</div>
   <div class="nav-tab" onclick="showPage('items',this)">📦 아이템 관리</div>
+  <div class="nav-tab" onclick="showPage('matrix',this)">📊 밸런스 매트릭스</div>
+  <div class="nav-tab" onclick="showPage('compare',this)">⚖️ 세트 비교</div>
+  <div class="nav-tab" onclick="showPage('tournament',this)">🏆 토너먼트</div>
+  <div class="nav-tab" onclick="showPage('efficiency',this)">💰 포인트 효율</div>
+  <div class="nav-tab" onclick="showPage('counter',this)">🎯 카운터 찾기</div>
+  <div class="nav-tab" onclick="showPage('patch',this)">🔧 패치 시뮬레이터</div>
+  <div class="nav-tab" onclick="showPage('balancelog',this)">📈 밸런스 히스토리</div>
+  <div class="nav-tab" onclick="showPage('history',this)">📜 전투 전적</div>
+  <div class="nav-tab" onclick="showPage('changelog',this)">🆕 업데이트</div>
   <div class="nav-tab" onclick="showPage('formula',this)">⚙️ 공식 설정</div>
 </nav>
 
@@ -246,9 +255,14 @@ hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
   </div>
 
   <!-- 전투 버튼 -->
-  <div style="display:flex;gap:10px;margin-bottom:16px;">
+  <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
     <button class="btn btn-primary" onclick="startAnimatedBattle()">⚔️ 전투 시작</button>
     <button class="btn btn-ghost" onclick="resetArena()">초기화</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:8px;">
+      <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">전투 속도</span>
+      <input type="range" id="battle-speed" min="1" max="5" value="3" step="1" style="width:90px;" oninput="updateSpeedLabel()">
+      <span id="speed-label" style="font-size:12px;color:var(--text);font-weight:600;min-width:36px;">보통</span>
+    </div>
   </div>
 
   <!-- 아레나 -->
@@ -305,7 +319,20 @@ hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
     </div>
 
     <!-- 밸런스 코멘트 -->
-    <div id="balance-comments" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="balance-comments" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+
+    <!-- HP 그래프 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">HP 변화 그래프 (마지막 전투)</div>
+      <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:20px;height:3px;background:#4a9eff;display:inline-block;border-radius:2px;"></span>플레이어 A</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:20px;height:3px;background:#e05060;display:inline-block;border-radius:2px;"></span>플레이어 B</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:20px;height:3px;background:#40c080;display:inline-block;border-radius:2px;border-style:dashed;"></span>재생</span>
+      </div>
+      <div style="position:relative;height:160px;">
+        <canvas id="hp-graph" style="width:100%;height:160px;"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- 로그 -->
@@ -396,6 +423,329 @@ hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
       </div>
     </div>
     <div id="items-list-wrap"><div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 등록된 아이템이 없어요</div></div>
+  </div>
+</div>
+
+<!-- ===== 전투 전적 ===== -->
+<div class="page" id="page-history">
+  <div class="page-title">전투 전적</div>
+  <div class="page-sub">1v1 시뮬레이터에서 진행한 전투 기록이에요.</div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-ghost btn-sm" onclick="clearHistory()">전적 초기화</button>
+    <span id="history-count" style="font-size:12px;color:var(--text-muted);align-self:center;"></span>
+  </div>
+  <div id="history-list">
+    <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 전투 기록이 없어요</div>
+  </div>
+</div>
+
+<!-- ===== 업데이트 내역 ===== -->
+<div class="page" id="page-changelog">
+  <div class="page-title">업데이트 내역</div>
+  <div class="page-sub">인생 약탈 PVP 시뮬레이터의 변경 기록이에요.</div>
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:680px;">
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v2.0</span>
+        <span style="font-size:11px;color:var(--text-muted);">최신</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>패치 시뮬레이터 — 스탯 일괄 조정 후 전체 매트릭스 변화 미리보기</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>밸런스 히스토리 — 스냅샷 저장 및 패치 전후 비교</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.9</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>localStorage 자동 저장 — 새로고침/파일 교체해도 데이터 유지</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>아이템·전적·공식 설정 자동 복원</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.8</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>토너먼트 탭 — 전체 아이템 리그전 + 랭킹</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>포인트 효율 분석 — 가성비 점수화</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>카운터 찾기 — 특정 아이템 잡는 스탯 조합 자동 탐색</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.7</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>전투 전적 탭 — 아이템 정보 포함 기록</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>업데이트 내역 탭 추가</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.6</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>강화 계산기 → 1v1 시뮬레이터 직접 연동 (A/B 버튼)</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>세트 비교 탭 — 여러 아이템 합산 스탯 비교 및 전투</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.5</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>밸런스 매트릭스 탭 — 전체 아이템 승률 표</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>아이템 카드 마인크래프트 툴팁 스타일로 개편</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.4</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>전투 속도 조절 슬라이더 (5단계)</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>HP 변화 그래프 — 턴별 시각화</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.3</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>공식 설정 전면 개편 — 모든 스탯 수치 직접 조정</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>치명타/크리티컬 분리 (치명타=고정추가뎀, 크리티컬=확률+배율)</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>HP 기본 30 고정, 생명 스탯 1당 +1</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>재생 쿨타임 5턴(=5초) 적용</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>캐릭터 스킨 교체 (페페 세일러복)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.2</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>픽셀 캐릭터 애니메이션 (공격/피격/사망 모션)</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>100회 자동 시뮬레이션 + 밸런스 코멘트</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>동시 타격 방식으로 변경</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>승률/DPS/크리기여도/관통기여도 수치 요약</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.1</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>밸런스 분석 수치 요약 패널</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>아이템 불러오기 시뮬레이터 연동</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>JSON 저장/불러오기</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:15px;font-weight:700;">v1.0</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;">
+        <div><span style="color:var(--green);margin-right:6px;">+</span>1v1 전투 시뮬레이터 최초 출시</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>아이템 등록/관리</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>강화 계산기</div>
+        <div><span style="color:var(--green);margin-right:6px;">+</span>공식 설정 탭</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 토너먼트 ===== -->
+<div class="page" id="page-tournament">
+  <div class="page-title">토너먼트</div>
+  <div class="page-sub">등록된 아이템 전부 리그전으로 돌려서 최종 랭킹을 매겨요. (각 조합 30회)</div>
+  <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;">
+    <button class="btn btn-primary" onclick="runTournament()">🏆 토너먼트 시작</button>
+    <span id="tournament-status" style="font-size:12px;color:var(--text-muted);"></span>
+  </div>
+  <div id="tournament-result">
+    <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아이템을 2개 이상 등록하면 토너먼트를 시작할 수 있어요</div>
+  </div>
+</div>
+
+<!-- ===== 포인트 효율 ===== -->
+<div class="page" id="page-efficiency">
+  <div class="page-title">포인트 효율 분석</div>
+  <div class="page-sub">포인트 대비 전투력 점수를 분석해요. 포인트가 없는 아이템은 제외돼요.</div>
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <button class="btn btn-primary" onclick="runEfficiency()">💰 분석 시작</button>
+  </div>
+  <div id="efficiency-result">
+    <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">포인트 비용이 등록된 아이템이 필요해요</div>
+  </div>
+</div>
+
+<!-- ===== 카운터 찾기 ===== -->
+<div class="page" id="page-counter">
+  <div class="page-title">카운터 찾기</div>
+  <div class="page-sub">선택한 아이템을 가장 잘 이기는 카운터 스탯 조합을 탐색해요.</div>
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;">
+    <div class="card">
+      <div class="card-title">대상 아이템</div>
+      <div class="form-row">
+        <div><label class="lbl">카운터할 아이템</label>
+          <select id="counter-target"><option value="">선택하세요</option></select>
+        </div>
+      </div>
+      <hr class="div">
+      <div class="card-title">탐색 범위</div>
+      <div class="form-row g2">
+        <div><label class="lbl">타격 최대</label><input type="number" id="ct-dmg" value="20" min="0"></div>
+        <div><label class="lbl">관통 최대</label><input type="number" id="ct-pen" value="10" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">방어도 최대</label><input type="number" id="ct-def" value="10" min="0"></div>
+        <div><label class="lbl">치명타 최대</label><input type="number" id="ct-fatal" value="30" min="0"></div>
+      </div>
+      <div class="form-row g2">
+        <div><label class="lbl">크리확률 최대</label><input type="number" id="ct-crit" value="30" min="0"></div>
+        <div><label class="lbl">총 스탯 포인트</label><input type="number" id="ct-budget" value="40" min="1"></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="runCounter()">🎯 카운터 탐색</button>
+    </div>
+    <div id="counter-result">
+      <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">대상 아이템을 선택하고 탐색을 시작하세요</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 패치 시뮬레이터 ===== -->
+<div class="page" id="page-patch">
+  <div class="page-title">패치 시뮬레이터</div>
+  <div class="page-sub">스탯 수치를 일괄로 조정했을 때 전체 밸런스가 어떻게 바뀌는지 미리 확인해요.</div>
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;">
+    <div class="card">
+      <div class="card-title">패치 내용 설정</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">수치를 % 또는 고정값으로 일괄 조정해요.</div>
+
+      <div class="form-row g2">
+        <div><label class="lbl">조정 방식</label>
+          <select id="patch-mode">
+            <option value="percent">% 증감</option>
+            <option value="flat">고정값 증감</option>
+          </select>
+        </div>
+        <div><label class="lbl">적용 스탯</label>
+          <select id="patch-stat">
+            <option value="dmg">타격</option>
+            <option value="fatal">치명타</option>
+            <option value="crit">크리티컬 확률</option>
+            <option value="critdmg">크리티컬 대미지</option>
+            <option value="pen">관통</option>
+            <option value="def">방어도</option>
+            <option value="life">생명</option>
+            <option value="regen">재생</option>
+            <option value="all">전체 공격 스탯</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label class="lbl">조정값 (음수 = 너프, 양수 = 버프)</label>
+          <input type="number" id="patch-value" value="-10" step="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label class="lbl">적용 등급 (비워두면 전체)</label>
+          <select id="patch-tier">
+            <option value="">전체</option>
+            <option value="일반">일반</option>
+            <option value="고급">고급</option>
+            <option value="희귀">희귀</option>
+            <option value="영웅">영웅</option>
+            <option value="전설">전설</option>
+            <option value="서사">서사</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="runPatch()">🔧 패치 시뮬레이션</button>
+    </div>
+    <div id="patch-result">
+      <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">패치 내용을 설정하고 시뮬레이션을 시작하세요</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 밸런스 히스토리 ===== -->
+<div class="page" id="page-balancelog">
+  <div class="page-title">밸런스 히스토리</div>
+  <div class="page-sub">매트릭스 분석을 실행할 때마다 스냅샷이 저장돼요. 패치 전후 비교에 사용하세요.</div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="saveBalanceSnapshot()">📸 현재 스냅샷 저장</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearBalanceLog()">초기화</button>
+  </div>
+  <div id="balancelog-result">
+    <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">스냅샷을 저장하면 여기에 표시돼요</div>
+  </div>
+</div>
+
+<!-- ===== 밸런스 매트릭스 ===== -->
+<div class="page" id="page-matrix">
+  <div class="page-title">밸런스 매트릭스</div>
+  <div class="page-sub">등록된 아이템끼리 전부 붙여서 승률을 한눈에 확인해요. (각 조합 50회 시뮬레이션)</div>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;">
+    <button class="btn btn-primary" onclick="runMatrix()">📊 매트릭스 생성</button>
+    <span style="font-size:12px;color:var(--text-muted);" id="matrix-status"></span>
+  </div>
+
+  <div id="matrix-result">
+    <div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">
+      아이템을 2개 이상 등록한 후 매트릭스 생성을 눌러보세요
+    </div>
+  </div>
+</div>
+
+<!-- ===== 세트 비교 ===== -->
+<div class="page" id="page-compare">
+  <div class="page-title">세트 비교</div>
+  <div class="page-sub">두 세트의 아이템을 각각 선택해서 합산 스탯을 비교하고 전투해요.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <!-- 세트 A -->
+    <div class="card">
+      <div class="card-title" style="color:var(--blue);">세트 A</div>
+      <div id="set-a-slots" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addSetSlot('a')" style="width:100%;">+ 아이템 추가</button>
+    </div>
+    <!-- 세트 B -->
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">세트 B</div>
+      <div id="set-b-slots" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addSetSlot('b')" style="width:100%;">+ 아이템 추가</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="comparesets()">⚖️ 비교 및 전투</button>
+    <button class="btn btn-ghost" onclick="clearSets()">초기화</button>
+  </div>
+
+  <div id="compare-result" style="display:none;">
+    <!-- 합산 스탯 비교 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="card" id="set-a-stats"></div>
+      <div class="card" id="set-b-stats"></div>
+    </div>
+    <!-- 승률 -->
+    <div class="card" id="set-battle-result"></div>
   </div>
 </div>
 
@@ -494,6 +844,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
 let items = [];
 let battleQueue = [];
 let battlePlaying = false;
+let battleHistory = [];
 
 // ===== NAV =====
 function showPage(id, el) {
@@ -502,6 +853,10 @@ function showPage(id, el) {
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   if(id==='sim'||id==='upgrade') refreshPresets();
+  if(id==='compare'){ refreshPresets(); renderSetSlots(); }
+  if(id==='history') renderHistory();
+  if(id==='tournament'||id==='efficiency'||id==='counter') runTournamentInit();
+  if(id==='balancelog') renderBalanceLog();
 }
 
 // ===== PIXEL CHARACTER DRAWING =====
@@ -691,8 +1046,31 @@ function startAnimatedBattle(){
       banner.style.display='block';
       if(winner==='b'||result.finalAHp<=0) drawDeadChar('canvas-a','#4a9eff');
       if(winner==='a'||result.finalBHp<=0) drawDeadChar('canvas-b','#e05060');
+
+      // 전적 기록 저장
+      const aPreset = document.getElementById('a-preset');
+      const bPreset = document.getElementById('b-preset');
+      const aName = aPreset.value !== '' ? (items[parseInt(aPreset.value)]?.name || '직접 입력') : '직접 입력';
+      const bName = bPreset.value !== '' ? (items[parseInt(bPreset.value)]?.name || '직접 입력') : '직접 입력';
+      battleHistory.unshift({
+        date: new Date().toLocaleString('ko-KR'),
+        winner: winner==='a' ? 'A' : 'B',
+        turns: result.turns,
+        aName, bName,
+        aStats: {...getStats('a')},
+        bStats: {...getStats('b')},
+        finalAHp: result.finalAHp.toFixed(1),
+        finalBHp: result.finalBHp.toFixed(1),
+      });
+      if(battleHistory.length > 50) battleHistory.pop();
+      saveToStorage();
+
       // 자동으로 100회 통계 실행
-      setTimeout(()=>runSimN(100), 400);
+      setTimeout(()=>{
+        runSimN(100);
+        document.getElementById('stats-summary').style.display='block';
+        requestAnimationFrame(()=>drawHpGraph(result.log, result.maxHp_a, result.maxHp_b));
+      }, 400);
       return;
     }
 
@@ -731,11 +1109,558 @@ function startAnimatedBattle(){
       }, 200);
 
       addLogEntry(entry, result);
-      setTimeout(nextTurn, 700);
-    }, 250);
+      setTimeout(nextTurn, getBattleDelay());
+    }, Math.round(getBattleDelay()*0.35));
   }
 
   nextTurn();
+}
+
+// ===== 토너먼트 =====
+function runTournament(){
+  if(items.length < 2){ alert('아이템을 2개 이상 등록해주세요!'); return; }
+  const f = getFormula();
+  const status = document.getElementById('tournament-status');
+  status.textContent = '계산 중...';
+
+  setTimeout(()=>{
+    const N = items.length;
+    const scores = Array(N).fill(0);
+    const wins   = Array(N).fill(0);
+    const losses = Array(N).fill(0);
+    const details = Array.from({length:N}, ()=>Array(N).fill(null));
+
+    for(let i=0; i<N; i++){
+      for(let j=0; j<N; j++){
+        if(i===j) continue;
+        const a = itemToStats(items[i], f);
+        const b = itemToStats(items[j], f);
+        let winsA=0;
+        for(let k=0;k<30;k++){
+          if(simulate(a,b,f,false).winner==='a') winsA++;
+        }
+        details[i][j] = Math.round(winsA/30*100);
+        if(winsA >= 15){ scores[i]+=3; wins[i]++; }
+        else if(winsA >= 10){ scores[i]+=1; }
+        else { losses[i]++; }
+      }
+    }
+
+    // 랭킹 정렬
+    const ranking = items.map((item,i)=>({item, i, score:scores[i], wins:wins[i], losses:losses[i]}))
+      .sort((a,b)=>b.score-a.score || b.wins-a.wins);
+
+    const tierColors = {'일반':'#aaa','고급':'#4a9eff','희귀':'#a855f7','영웅':'#f59e0b','전설':'#ef4444','서사':'#ec4899'};
+    const medals = ['🥇','🥈','🥉'];
+
+    let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    ranking.forEach((r,rank)=>{
+      const tc = tierColors[r.item.tier]||'#aaa';
+      const avgWin = Math.round(details[r.i].filter(v=>v!==null).reduce((a,b)=>a+b,0) / (N-1));
+      html += `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:16px;${rank===0?'border-color:'+tc+';box-shadow:0 0 12px '+tc+'33;':''}">
+          <div style="font-size:24px;width:36px;text-align:center;">${medals[rank]||rank+1}</div>
+          <div style="flex:1;">
+            <div style="color:${tc};font-weight:700;font-size:14px;">${r.item.name}</div>
+            <div style="color:var(--text-muted);font-size:11px;">${r.item.tier} · ${r.item.type}</div>
+          </div>
+          <div style="display:flex;gap:20px;font-size:13px;text-align:center;">
+            <div><div style="color:var(--text-muted);font-size:10px;margin-bottom:2px;">점수</div><div style="font-weight:700;color:var(--text);">${r.score}</div></div>
+            <div><div style="color:var(--text-muted);font-size:10px;margin-bottom:2px;">승</div><div style="font-weight:700;color:var(--green);">${r.wins}</div></div>
+            <div><div style="color:var(--text-muted);font-size:10px;margin-bottom:2px;">패</div><div style="font-weight:700;color:var(--red);">${r.losses}</div></div>
+            <div><div style="color:var(--text-muted);font-size:10px;margin-bottom:2px;">평균 승률</div><div style="font-weight:700;color:${avgWin>=60?'var(--green)':avgWin>=45?'var(--text)':'var(--red)'};">${avgWin}%</div></div>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+
+    document.getElementById('tournament-result').innerHTML = html;
+    status.textContent = `완료 — ${N}개 아이템`;
+  }, 50);
+}
+
+// ===== 포인트 효율 =====
+function runEfficiency(){
+  const f = getFormula();
+  const scored = items
+    .filter(item => item.points > 0)
+    .map(item => {
+      const stats = itemToStats(item, f);
+      // 전투력 점수: 공격력 + 방어력 + HP 보정
+      const offScore = stats.dmg * f.baseDmg
+        + (stats.fatal * f.fatalRate / 100) * f.fatalDmg
+        + (stats.crit  * f.critRate  / 100) * stats.critdmg * f.critDmgMult
+        + stats.pen * f.penMult;
+      const defScore = stats.def * f.defMult * 0.8 + (stats.hp - f.baseHp) * 0.3 + stats.regen * 0.5;
+      const power = Math.round((offScore + defScore) * 10) / 10;
+      const efficiency = Math.round((power / item.points) * 10000) / 10;
+      return { item, power, efficiency };
+    })
+    .sort((a,b) => b.efficiency - a.efficiency);
+
+  if(scored.length === 0){
+    document.getElementById('efficiency-result').innerHTML =
+      '<div style="text-align:center;color:var(--text-dim);padding:40px;">포인트 비용이 설정된 아이템이 없어요</div>';
+    return;
+  }
+
+  const maxEff = scored[0].efficiency;
+  const tierColors = {'일반':'#aaa','고급':'#4a9eff','희귀':'#a855f7','영웅':'#f59e0b','전설':'#ef4444','서사':'#ec4899'};
+
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  scored.forEach((s, rank) => {
+    const tc = tierColors[s.item.tier]||'#aaa';
+    const barW = Math.round((s.efficiency / maxEff) * 100);
+    const effColor = barW >= 80 ? 'var(--green)' : barW >= 50 ? 'var(--warn)' : 'var(--red)';
+    const label = barW >= 80 ? '✅ 가성비 좋음' : barW >= 50 ? '⚠️ 보통' : '🔴 포인트 대비 약함';
+    html += `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <span style="color:${tc};font-weight:700;">${s.item.name}</span>
+            <span style="color:var(--text-muted);font-size:11px;margin-left:6px;">${s.item.tier}</span>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px;text-align:right;">
+            <div><span style="color:var(--text-muted);">전투력 </span><span style="font-weight:600;">${s.power}</span></div>
+            <div><span style="color:var(--text-muted);">포인트 </span><span style="font-weight:600;">${s.item.points.toLocaleString()}</span></div>
+            <div><span style="color:var(--text-muted);">효율 </span><span style="font-weight:700;color:${effColor};">${s.efficiency}</span></div>
+          </div>
+        </div>
+        <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-bottom:6px;">
+          <div style="width:${barW}%;height:100%;background:${effColor};border-radius:3px;transition:width .4s;"></div>
+        </div>
+        <div style="font-size:11px;color:${effColor};">${label}</div>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('efficiency-result').innerHTML = html;
+}
+
+// ===== 카운터 찾기 =====
+function runCounter(){
+  const idx = parseInt(document.getElementById('counter-target').value);
+  if(isNaN(idx)){ alert('아이템을 선택해주세요!'); return; }
+  const f = getFormula();
+  const target = itemToStats(items[idx], f);
+  const budget = parseInt(document.getElementById('ct-budget').value)||40;
+  const maxDmg   = parseInt(document.getElementById('ct-dmg').value)||20;
+  const maxPen   = parseInt(document.getElementById('ct-pen').value)||10;
+  const maxDef   = parseInt(document.getElementById('ct-def').value)||10;
+  const maxFatal = parseInt(document.getElementById('ct-fatal').value)||30;
+  const maxCrit  = parseInt(document.getElementById('ct-crit').value)||30;
+
+  const results = [];
+  // 조합 샘플링 (랜덤 탐색 500회)
+  for(let k=0; k<500; k++){
+    const dmg   = Math.floor(Math.random()*(maxDmg+1));
+    const pen   = Math.floor(Math.random()*(maxPen+1));
+    const def   = Math.floor(Math.random()*(maxDef+1));
+    const fatal = Math.floor(Math.random()*(maxFatal+1));
+    const crit  = Math.floor(Math.random()*(maxCrit+1));
+    if(dmg+pen+def+fatal+crit > budget) continue;
+
+    const challenger = { hp: f.baseHp, dmg, pen, def, fatal, crit, critdmg:0, regen:0 };
+    let winsA=0;
+    for(let i=0;i<20;i++){
+      if(simulate(challenger, target, f, false).winner==='a') winsA++;
+    }
+    const winRate = Math.round(winsA/20*100);
+    if(winRate >= 60) results.push({dmg, pen, def, fatal, crit, winRate});
+  }
+
+  results.sort((a,b)=>b.winRate-a.winRate);
+  const top = results.slice(0,5);
+
+  if(top.length===0){
+    document.getElementById('counter-result').innerHTML =
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);">주어진 스탯 범위 내에서 60% 이상 승률의 카운터를 찾지 못했어요.<br>스탯 범위나 총 포인트를 늘려보세요.</div>';
+    return;
+  }
+
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  top.forEach((r,i)=>{
+    const winColor = r.winRate>=75?'var(--green)':'var(--warn)';
+    html += `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:13px;">카운터 #${i+1}</span>
+          <span style="font-size:15px;font-weight:700;color:${winColor};">승률 ${r.winRate}%</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;">
+          ${r.dmg   ?`<span style="background:rgba(255,255,255,0.06);border-radius:4px;padding:3px 8px;">타격 +${r.dmg}</span>`:''}
+          ${r.pen   ?`<span style="background:rgba(124,106,247,0.15);color:#a89eff;border-radius:4px;padding:3px 8px;">관통 +${r.pen}</span>`:''}
+          ${r.def   ?`<span style="background:rgba(74,158,255,0.12);color:#7ac;border-radius:4px;padding:3px 8px;">방어도 +${r.def}</span>`:''}
+          ${r.fatal ?`<span style="background:rgba(240,160,48,0.12);color:#f0c060;border-radius:4px;padding:3px 8px;">치명타 +${r.fatal}</span>`:''}
+          ${r.crit  ?`<span style="background:rgba(240,160,48,0.12);color:#f0c060;border-radius:4px;padding:3px 8px;">크리확률 +${r.crit}%</span>`:''}
+          <span style="color:var(--text-muted);border-radius:4px;padding:3px 8px;">합계 ${r.dmg+r.pen+r.def+r.fatal+r.crit}pt</span>
+        </div>
+        <button onclick="applyCounterToSim(${JSON.stringify(r)})" style="margin-top:8px;background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--accent);border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;">시뮬레이터 A에 적용 ↗</button>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('counter-result').innerHTML = html;
+}
+
+function applyCounterToSim(r){
+  document.getElementById('a-dmg').value   = r.dmg||0;
+  document.getElementById('a-pen').value   = r.pen||0;
+  document.getElementById('a-def').value   = r.def||0;
+  document.getElementById('a-fatal').value = r.fatal||0;
+  document.getElementById('a-crit').value  = r.crit||0;
+  document.getElementById('a-critdmg').value = 0;
+  document.getElementById('a-life').value  = 0;
+  document.getElementById('a-regen').value = 0;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-sim').classList.add('active');
+  document.querySelector('.nav-tab').classList.add('active');
+}
+
+// ===== 패치 시뮬레이터 =====
+function runPatch(){
+  if(items.length < 2){ alert('아이템을 2개 이상 등록해주세요!'); return; }
+  const f = getFormula();
+  const mode  = document.getElementById('patch-mode').value;
+  const stat  = document.getElementById('patch-stat').value;
+  const value = parseFloat(document.getElementById('patch-value').value)||0;
+  const tier  = document.getElementById('patch-tier').value;
+
+  // 패치 적용 함수
+  function applyPatch(item){
+    const c = {...item};
+    const stats = stat==='all' ? ['dmg','fatal','crit','critdmg','pen'] : [stat];
+    stats.forEach(s => {
+      if(!(s in c)) return;
+      if(mode==='percent') c[s] = Math.max(0, Math.round((c[s]||0) * (1 + value/100) * 10)/10);
+      else c[s] = Math.max(0, (c[s]||0) + value);
+    });
+    return c;
+  }
+
+  // 패치 전 매트릭스
+  const N = items.length;
+  const before = Array.from({length:N}, ()=>Array(N).fill(null));
+  const after  = Array.from({length:N}, ()=>Array(N).fill(null));
+
+  for(let i=0;i<N;i++){
+    for(let j=0;j<N;j++){
+      if(i===j) continue;
+      const a = itemToStats(items[i], f);
+      const b = itemToStats(items[j], f);
+      let wA=0;
+      for(let k=0;k<20;k++) if(simulate(a,b,f,false).winner==='a') wA++;
+      before[i][j] = Math.round(wA/20*100);
+
+      // 패치 적용
+      const patchedI = (!tier||items[i].tier===tier) ? applyPatch(items[i]) : items[i];
+      const patchedJ = (!tier||items[j].tier===tier) ? applyPatch(items[j]) : items[j];
+      const pa = itemToStats(patchedI, f);
+      const pb = itemToStats(patchedJ, f);
+      let wA2=0;
+      for(let k=0;k<20;k++) if(simulate(pa,pb,f,false).winner==='a') wA2++;
+      after[i][j] = Math.round(wA2/20*100);
+    }
+  }
+
+  const tierColors = {'일반':'#aaa','고급':'#4a9eff','희귀':'#a855f7','영웅':'#f59e0b','전설':'#ef4444','서사':'#ec4899'};
+  const statLabel = {dmg:'타격',fatal:'치명타',crit:'크리확률',critdmg:'크리뎀',pen:'관통',def:'방어도',life:'생명',regen:'재생',all:'전체 공격'};
+  const patchDesc = `${tier||'전체'} ${statLabel[stat]} ${value>0?'+'+value:value}${mode==='percent'?'%':''}`;
+
+  let html = `<div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+    패치 내용: <span style="color:var(--text);font-weight:600;">${patchDesc}</span>
+  </div>`;
+
+  html += '<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:12px;width:100%;">';
+  html += '<thead><tr><th style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-align:left;">아이템</th>';
+  items.forEach(item=>{
+    html+=`<th style="padding:8px 8px;border-bottom:1px solid var(--border);text-align:center;min-width:90px;font-size:11px;color:${tierColors[item.tier]||'#aaa'};">${item.name}</th>`;
+  });
+  html+='</tr></thead><tbody>';
+
+  items.forEach((item,i)=>{
+    const tc = tierColors[item.tier]||'#aaa';
+    html+=`<tr style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 10px;color:${tc};font-weight:600;">${item.name}</td>`;
+    items.forEach((_,j)=>{
+      if(i===j){ html+='<td style="padding:8px 8px;text-align:center;background:var(--surface3);color:var(--text-dim);">—</td>'; return; }
+      const b4 = before[i][j];
+      const af = after[i][j];
+      const diff = af-b4;
+      const diffStr = diff>0?`<span style="color:var(--green);font-size:10px;">+${diff}</span>`:diff<0?`<span style="color:var(--red);font-size:10px;">${diff}</span>`:'';
+      html+=`<td style="padding:8px 8px;text-align:center;">
+        <div style="font-weight:600;">${af}%</div>
+        <div>${diffStr}</div>
+      </td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+=`<div style="margin-top:10px;font-size:11px;color:var(--text-muted);">숫자 옆 증감은 패치 전 대비 변화예요.</div>`;
+
+  document.getElementById('patch-result').innerHTML = html;
+}
+
+// ===== 밸런스 히스토리 =====
+let balanceLog = [];
+
+function saveBalanceSnapshot(){
+  if(items.length < 2){ alert('아이템을 2개 이상 등록해주세요!'); return; }
+  const f = getFormula();
+  const N = items.length;
+  const matrix = Array.from({length:N}, ()=>Array(N).fill(null));
+  for(let i=0;i<N;i++){
+    for(let j=0;j<N;j++){
+      if(i===j) continue;
+      const a = itemToStats(items[i], f);
+      const b = itemToStats(items[j], f);
+      let wA=0;
+      for(let k=0;k<30;k++) if(simulate(a,b,f,false).winner==='a') wA++;
+      matrix[i][j] = Math.round(wA/30*100);
+    }
+  }
+  balanceLog.unshift({
+    date: new Date().toLocaleString('ko-KR'),
+    items: items.map(i=>({name:i.name, tier:i.tier})),
+    matrix,
+    memo: `스냅샷 #${balanceLog.length+1}`
+  });
+  if(balanceLog.length > 10) balanceLog.pop();
+  try{ localStorage.setItem('pvp_balancelog', JSON.stringify(balanceLog)); }catch(e){}
+  renderBalanceLog();
+}
+
+function clearBalanceLog(){
+  if(!confirm('밸런스 히스토리를 모두 삭제할까요?')) return;
+  balanceLog = [];
+  try{ localStorage.removeItem('pvp_balancelog'); }catch(e){}
+  renderBalanceLog();
+}
+
+function renderBalanceLog(){
+  const wrap = document.getElementById('balancelog-result');
+  if(balanceLog.length === 0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">스냅샷을 저장하면 여기에 표시돼요</div>';
+    return;
+  }
+  const tierColors = {'일반':'#aaa','고급':'#4a9eff','희귀':'#a855f7','영웅':'#f59e0b','전설':'#ef4444','서사':'#ec4899'};
+  let html = '<div style="display:flex;flex-direction:column;gap:16px;">';
+  balanceLog.forEach((snap, si)=>{
+    html+=`<div class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-weight:600;">${snap.memo}</span>
+        <span style="font-size:11px;color:var(--text-muted);">${snap.date}</span>
+      </div>
+      <div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:11px;">
+        <thead><tr><th style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);">↓ vs →</th>`;
+    snap.items.forEach(item=>{
+      html+=`<th style="padding:4px 8px;border-bottom:1px solid var(--border);color:${tierColors[item.tier]||'#aaa'};">${item.name}</th>`;
+    });
+    html+='</tr></thead><tbody>';
+    snap.items.forEach((item,i)=>{
+      html+=`<tr><td style="padding:4px 8px;color:${tierColors[item.tier]||'#aaa'};font-weight:600;">${item.name}</td>`;
+      snap.matrix[i].forEach((pct,j)=>{
+        if(i===j){ html+='<td style="padding:4px 8px;text-align:center;color:var(--text-dim);">—</td>'; return; }
+        const c = pct>=60?'var(--green)':pct>=45?'var(--text)':'var(--red)';
+        html+=`<td style="padding:4px 8px;text-align:center;color:${c};font-weight:${pct>=60||pct<=40?'700':'400'};">${pct}%</td>`;
+      });
+      html+='</tr>';
+    });
+    html+='</tbody></table></div>';
+
+    // 이전 스냅샷과 비교
+    if(si < balanceLog.length-1){
+      const prev = balanceLog[si+1];
+      const diffs = [];
+      snap.items.forEach((item,i)=>{
+        snap.matrix[i].forEach((pct,j)=>{
+          if(i===j) return;
+          const prevIdx = prev.items.findIndex(p=>p.name===item.name);
+          const prevJIdx = prev.items.findIndex(p=>p.name===snap.items[j].name);
+          if(prevIdx<0||prevJIdx<0) return;
+          const prevPct = prev.matrix[prevIdx][prevJIdx];
+          if(prevPct===null) return;
+          const diff = pct - prevPct;
+          if(Math.abs(diff)>=10) diffs.push({name:item.name, vs:snap.items[j].name, diff});
+        });
+      });
+      if(diffs.length>0){
+        html+=`<div style="margin-top:8px;font-size:11px;color:var(--text-muted);">이전 대비 변화: `;
+        html+=diffs.slice(0,3).map(d=>`<span style="color:${d.diff>0?'var(--green)':'var(--red)'};">${d.name} vs ${d.vs}: ${d.diff>0?'+':''}${d.diff}%</span>`).join(' · ');
+        html+='</div>';
+      }
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+  wrap.innerHTML = html;
+}
+
+function runTournamentInit(){
+  refreshPresets();
+  const sel = document.getElementById('counter-target');
+  if(sel) sel.innerHTML = '<option value="">선택하세요</option>' +
+    items.map((item,i)=>`<option value="${i}">${item.name} (${item.tier})</option>`).join('');
+}
+
+function renderHistory(){
+  const wrap = document.getElementById('history-list');
+  const count = document.getElementById('history-count');
+  if(battleHistory.length === 0){
+    wrap.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 전투 기록이 없어요</div>';
+    count.textContent = '';
+    return;
+  }
+  count.textContent = `총 ${battleHistory.length}전`;
+
+  // 승률 계산
+  const aWins = battleHistory.filter(h=>h.winner==='A').length;
+  const bWins = battleHistory.length - aWins;
+
+  wrap.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+      <div class="result-card"><div class="r-label">총 전투</div><div class="r-val">${battleHistory.length}전</div></div>
+      <div class="result-card"><div class="r-label">A 승</div><div class="r-val" style="color:var(--blue);">${aWins}</div></div>
+      <div class="result-card"><div class="r-label">B 승</div><div class="r-val" style="color:var(--red);">${bWins}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+    ${battleHistory.map((h,i) => {
+      const wColor = h.winner==='A' ? 'var(--blue)' : 'var(--red)';
+      const statStr = s => [
+        s.dmg ? `타격${s.dmg}` : '',
+        s.fatal ? `치명타${s.fatal}` : '',
+        s.crit ? `크리${s.crit}%` : '',
+        s.pen ? `관통${s.pen}` : '',
+        s.def ? `방어${s.def}` : '',
+      ].filter(Boolean).join(' · ');
+      return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:11px;color:var(--text-muted);">#${battleHistory.length-i} · ${h.date}</span>
+            <span style="font-size:13px;font-weight:700;color:${wColor};">플레이어 ${h.winner} 승리</span>
+            <span style="font-size:11px;color:var(--text-muted);">${h.turns}턴</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;font-size:12px;">
+            <div style="background:rgba(74,158,255,0.08);border-radius:6px;padding:8px 10px;">
+              <div style="color:var(--blue);font-weight:600;margin-bottom:3px;">${h.aName} <span style="color:var(--text-muted);font-weight:400;">(A)</span></div>
+              <div style="color:var(--text-muted);font-size:11px;">${statStr(h.aStats)}</div>
+              <div style="color:var(--text-muted);font-size:11px;margin-top:2px;">잔여 HP: ${h.finalAHp}</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-weight:700;">vs</div>
+            <div style="background:rgba(224,80,96,0.08);border-radius:6px;padding:8px 10px;">
+              <div style="color:var(--red);font-weight:600;margin-bottom:3px;">${h.bName} <span style="color:var(--text-muted);font-weight:400;">(B)</span></div>
+              <div style="color:var(--text-muted);font-size:11px;">${statStr(h.bStats)}</div>
+              <div style="color:var(--text-muted);font-size:11px;margin-top:2px;">잔여 HP: ${h.finalBHp}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('')}
+    </div>
+  `;
+}
+
+function clearHistory(){
+  if(!confirm('전투 기록을 모두 삭제할까요?')) return;
+  battleHistory = [];
+  saveToStorage();
+  renderHistory();
+}
+
+function drawHpGraph(log, maxHp_a, maxHp_b){
+  const canvas = document.getElementById('hp-graph');
+  if(!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 600;
+  const H = 160;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = {top:10, right:20, bottom:28, left:36};
+  const gw = W - pad.left - pad.right;
+  const gh = H - pad.top - pad.bottom;
+  const maxHp = Math.max(maxHp_a, maxHp_b);
+  const turns = log.length;
+
+  // 배경
+  ctx.fillStyle = 'rgba(255,255,255,0.02)';
+  ctx.fillRect(pad.left, pad.top, gw, gh);
+
+  // 그리드
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for(let i=0; i<=4; i++){
+    const y = pad.top + gh * (i/4);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+gw, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxHp*(1-i/4)), pad.left-4, y+4);
+  }
+
+  // X축 라벨
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(turns/6));
+  for(let i=0; i<=turns; i+=step){
+    const x = pad.left + (i/turns)*gw;
+    ctx.fillText(i+'턴', x, H-6);
+  }
+
+  function drawLine(data, color, dashed=false){
+    if(!data.length) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash(dashed ? [4,3] : []);
+    ctx.beginPath();
+    data.forEach((val, i) => {
+      const x = pad.left + (i/(data.length-1||1))*gw;
+      const y = pad.top + gh*(1 - Math.max(0,val)/maxHp);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const aHps = [maxHp_a, ...log.map(e=>e.aHp)];
+  const bHps = [maxHp_b, ...log.map(e=>e.bHp)];
+  const regenTurns = log.map((e,i)=>e.regenTurn ? {i:i+1, aHp:e.aHp, bHp:e.bHp} : null).filter(Boolean);
+
+  drawLine(aHps, '#4a9eff');
+  drawLine(bHps, '#e05060');
+
+  // 재생 포인트
+  regenTurns.forEach(r => {
+    const x = pad.left + ((r.i)/(aHps.length-1||1))*gw;
+    ctx.fillStyle = '#40c080';
+    ctx.beginPath();
+    ctx.arc(x, pad.top + gh*(1 - r.aHp/maxHp), 3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, pad.top + gh*(1 - r.bHp/maxHp), 3, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // 축선
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top+gh);
+  ctx.lineTo(pad.left+gw, pad.top+gh);
+  ctx.stroke();
+}
+
+function getBattleDelay(){
+  const speed = parseInt(document.getElementById('battle-speed').value)||3;
+  const delays = {1:1200, 2:800, 3:500, 4:250, 5:80};
+  return delays[speed]||500;
+}
+
+function updateSpeedLabel(){
+  const speed = parseInt(document.getElementById('battle-speed').value)||3;
+  const labels = {1:'매우 느림', 2:'느림', 3:'보통', 4:'빠름', 5:'매우 빠름'};
+  document.getElementById('speed-label').textContent = labels[speed]||'보통';
 }
 
 function spawnDmgFloat(targetEl, dmgData, isA){
@@ -939,6 +1864,249 @@ function renderComments(s){
   `).join('');
 }
 
+function runMatrix(){
+  if(items.length < 2){
+    alert('아이템을 2개 이상 등록해주세요!');
+    return;
+  }
+  const f = getFormula();
+  const status = document.getElementById('matrix-status');
+  status.textContent = '계산 중...';
+
+  setTimeout(()=>{
+    const N = items.length;
+    const results = Array.from({length:N}, ()=>Array(N).fill(null));
+
+    for(let i=0; i<N; i++){
+      for(let j=0; j<N; j++){
+        if(i===j) continue;
+        const a = itemToStats(items[i], f);
+        const b = itemToStats(items[j], f);
+        let winsA = 0;
+        for(let k=0; k<50; k++){
+          const r = simulate(a, b, f, false);
+          if(r.winner==='a') winsA++;
+        }
+        results[i][j] = Math.round(winsA/50*100);
+      }
+    }
+
+    renderMatrix(results);
+    status.textContent = `완료 — ${N*N-N}개 조합`;
+  }, 50);
+}
+
+function itemToStats(item, f){
+  return {
+    hp:      f.baseHp + (item.life||0) * f.lifeMult,
+    dmg:     item.dmg||0,
+    fatal:   item.fatal||0,
+    crit:    item.crit||0,
+    critdmg: item.critdmg||0,
+    pen:     item.pen||0,
+    def:     item.def||0,
+    regen:   item.regen||0,
+  };
+}
+
+function renderMatrix(results){
+  const N = items.length;
+  const tierColors = {
+    '일반':'#aaa','고급':'#4a9eff','희귀':'#a855f7',
+    '영웅':'#f59e0b','전설':'#ef4444','서사':'#ec4899'
+  };
+
+  function winColor(pct){
+    if(pct===null) return 'var(--surface3)';
+    if(pct>=70) return 'rgba(64,192,128,0.35)';
+    if(pct>=55) return 'rgba(64,192,128,0.15)';
+    if(pct>=45) return 'rgba(255,255,255,0.05)';
+    if(pct>=30) return 'rgba(224,80,96,0.15)';
+    return 'rgba(224,80,96,0.35)';
+  }
+
+  function winText(pct){
+    if(pct===null) return '<span style="color:var(--text-dim);">—</span>';
+    const color = pct>=60?'var(--green)':pct>=45?'var(--text)':'var(--red)';
+    return `<span style="color:${color};font-weight:${pct>=60||pct<=40?'700':'400'};">${pct}%</span>`;
+  }
+
+  // 헤더
+  let html = `<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:12px;width:100%;">`;
+  html += `<thead><tr><th style="padding:8px 12px;text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.06em;">아이템 ↓ vs →</th>`;
+  items.forEach(item=>{
+    const tc = tierColors[item.tier]||'#aaa';
+    html += `<th style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border);min-width:80px;">
+      <div style="color:${tc};font-size:11px;font-weight:700;">${item.name}</div>
+      <div style="color:var(--text-dim);font-size:10px;">${item.tier}</div>
+    </th>`;
+  });
+  html += `<th style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;">평균 승률</th></tr></thead><tbody>`;
+
+  // 행
+  items.forEach((item, i)=>{
+    const tc = tierColors[item.tier]||'#aaa';
+    const rowWins = results[i].filter(v=>v!==null);
+    const avgWin = rowWins.length ? Math.round(rowWins.reduce((a,b)=>a+b,0)/rowWins.length) : 0;
+    const avgColor = avgWin>=60?'var(--green)':avgWin>=45?'var(--text)':'var(--red)';
+
+    html += `<tr style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:10px 12px;white-space:nowrap;">
+        <span style="color:${tc};font-weight:700;">${item.name}</span>
+        <span style="color:var(--text-dim);font-size:11px;margin-left:4px;">${item.tier}</span>
+      </td>`;
+
+    results[i].forEach((pct, j)=>{
+      html += `<td style="padding:8px 10px;text-align:center;background:${winColor(pct)};">
+        ${winText(pct)}
+      </td>`;
+    });
+
+    html += `<td style="padding:8px 10px;text-align:center;background:var(--surface2);">
+      <span style="color:${avgColor};font-weight:700;">${avgWin}%</span>
+    </td></tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+
+  // 범례
+  html += `<div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">
+    <span>🟢 70%+ 압도적 우세</span>
+    <span>🔵 55~70% 우세</span>
+    <span>⚪ 45~55% 균형</span>
+    <span>🟠 30~45% 열세</span>
+    <span>🔴 30% 미만 압도적 열세</span>
+  </div>`;
+
+  document.getElementById('matrix-result').innerHTML = html;
+}
+
+// ===== 세트 비교 =====
+let setSlots = { a: [], b: [] };
+
+function addSetSlot(side){
+  if(items.length === 0){ alert('아이템을 먼저 등록해주세요!'); return; }
+  setSlots[side].push(null);
+  renderSetSlots();
+}
+
+function removeSetSlot(side, idx){
+  setSlots[side].splice(idx, 1);
+  renderSetSlots();
+}
+
+function renderSetSlots(){
+  ['a','b'].forEach(side => {
+    const wrap = document.getElementById(`set-${side}-slots`);
+    if(setSlots[side].length === 0){
+      wrap.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px 0;">아이템 없음</div>';
+      return;
+    }
+    wrap.innerHTML = setSlots[side].map((val, idx) => `
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select onchange="setSlots['${side}'][${idx}]=parseInt(this.value)" style="flex:1;font-size:12px;">
+          <option value="">선택하세요</option>
+          ${items.map((item,i)=>`<option value="${i}" ${val===i?'selected':''}>${item.name} (${item.tier})</option>`).join('')}
+        </select>
+        <button onclick="removeSetSlot('${side}',${idx})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:0 4px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-dim)'">×</button>
+      </div>
+    `).join('');
+  });
+}
+
+function mergeSetStats(side, f){
+  const merged = { hp: f.baseHp, dmg:0, fatal:0, crit:0, critdmg:0, pen:0, def:0, regen:0, life:0 };
+  setSlots[side].forEach(idx => {
+    if(idx === null || idx === undefined || isNaN(idx)) return;
+    const item = items[idx];
+    if(!item) return;
+    merged.life    += item.life||0;
+    merged.dmg     += item.dmg||0;
+    merged.fatal   += item.fatal||0;
+    merged.crit    += item.crit||0;
+    merged.critdmg += item.critdmg||0;
+    merged.pen     += item.pen||0;
+    merged.def     += item.def||0;
+    merged.regen   += item.regen||0;
+  });
+  merged.hp = f.baseHp + merged.life * f.lifeMult;
+  return merged;
+}
+
+function comparesets(){
+  const f = getFormula();
+  const a = mergeSetStats('a', f);
+  const b = mergeSetStats('b', f);
+
+  // 스탯 카드 렌더링
+  function statCard(stats, side){
+    const color = side==='a' ? 'var(--blue)' : 'var(--red)';
+    const label = side==='a' ? '세트 A' : '세트 B';
+    const rows = [
+      ['HP', stats.hp.toFixed(0), '#55ff55'],
+      ['타격', stats.dmg, '#ffffff'],
+      ['치명타', stats.fatal+'%', '#ffaa00'],
+      ['크리티컬 확률', stats.crit+'%', '#ffaa00'],
+      ['크리티컬 대미지', stats.critdmg, '#ff5555'],
+      ['관통', stats.pen, '#aa00aa'],
+      ['방어도', stats.def, '#5555ff'],
+      ['재생', stats.regen, '#55ffff'],
+    ].filter(([,v])=>parseFloat(v)>0);
+
+    return `
+      <div class="card-title" style="color:${color};">${label} 합산 스탯</div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        ${rows.map(([name,val,c])=>`
+          <tr style="border-bottom:0.5px solid var(--border);">
+            <td style="padding:6px 0;color:var(--text-muted);">${name}</td>
+            <td style="padding:6px 0;text-align:right;color:${c};font-weight:600;">${val}</td>
+          </tr>
+        `).join('')}
+      </table>
+    `;
+  }
+
+  document.getElementById('set-a-stats').innerHTML = statCard(a, 'a');
+  document.getElementById('set-b-stats').innerHTML = statCard(b, 'b');
+
+  // 100회 전투
+  let winsA=0, totalTurns=0;
+  for(let i=0;i<100;i++){
+    const r = simulate(a, b, f, false);
+    if(r.winner==='a') winsA++;
+    totalTurns += r.turns;
+  }
+  const winRateA = Math.round(winsA);
+  const winRateB = 100-winRateA;
+  const avgTurns = Math.round(totalTurns/100);
+  const winner = winRateA > winRateB ? 'A' : winRateB > winRateA ? 'B' : '무승부';
+  const winColor = winRateA > winRateB ? 'var(--blue)' : 'var(--red)';
+
+  document.getElementById('set-battle-result').innerHTML = `
+    <div class="card-title">전투 결과 (100회)</div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;">
+      <span style="color:var(--blue);font-weight:700;">세트 A ${winRateA}%</span>
+      <span style="color:var(--text-muted);">평균 ${avgTurns}턴</span>
+      <span style="color:var(--red);font-weight:700;">세트 B ${winRateB}%</span>
+    </div>
+    <div style="height:10px;background:var(--surface3);border-radius:5px;overflow:hidden;display:flex;margin-bottom:12px;">
+      <div style="width:${winRateA}%;background:var(--blue);transition:width .5s;"></div>
+      <div style="width:${winRateB}%;background:var(--red);transition:width .5s;"></div>
+    </div>
+    <div style="text-align:center;font-size:16px;font-weight:700;color:${winColor};">
+      ${winner === '무승부' ? '⚖️ 균형 잡힌 매치업!' : `세트 ${winner} 우세`}
+    </div>
+  `;
+
+  document.getElementById('compare-result').style.display = 'block';
+}
+
+function clearSets(){
+  setSlots = { a: [], b: [] };
+  renderSetSlots();
+  document.getElementById('compare-result').style.display = 'none';
+}
+
 function loadPreset(side){
   const idx=parseInt(document.getElementById(side+'-preset').value);
   if(isNaN(idx)) return;
@@ -963,21 +2131,83 @@ function loadUpgradePreset(){
 }
 
 function calcUpgrade(){
-  const base={dmg:parseFloat(document.getElementById('upg-dmg').value)||0,crit:parseFloat(document.getElementById('upg-crit').value)||0,critdmg:parseFloat(document.getElementById('upg-critdmg').value)||0,pen:parseFloat(document.getElementById('upg-pen').value)||0,def:parseFloat(document.getElementById('upg-def').value)||0,hp:parseFloat(document.getElementById('upg-hp').value)||20};
+  const base={
+    dmg:     parseFloat(document.getElementById('upg-dmg').value)||0,
+    fatal:   parseFloat(document.getElementById('upg-fatal')||{value:0}).value||0,
+    crit:    parseFloat(document.getElementById('upg-crit').value)||0,
+    critdmg: parseFloat(document.getElementById('upg-critdmg').value)||0,
+    pen:     parseFloat(document.getElementById('upg-pen').value)||0,
+    def:     parseFloat(document.getElementById('upg-def').value)||0,
+    life:    parseFloat(document.getElementById('upg-hp').value)||0,
+  };
   const maxSteps=parseInt(document.getElementById('upg-max').value)||5;
   const breakAt=parseInt(document.getElementById('upg-break').value)||0;
   const type=document.getElementById('upg-type').value;
   const amount=parseFloat(document.getElementById('upg-amount').value)||1;
   const rate=parseFloat(document.getElementById('upg-rate').value)||100;
   const f=getFormula();
+
+  // 단계별 스탯 저장 (전투 연동용)
+  window._upgradeSteps = [];
+
   let rows='';
   for(let i=0;i<=maxSteps;i++){
-    const cur={...base};cur[type]=+(base[type]+amount*i).toFixed(2);
+    const cur={...base};
+    cur[type]=+(base[type]+amount*i).toFixed(2);
+    window._upgradeSteps.push({...cur});
     const isDanger=breakAt>0&&i>=breakAt;
-    const avgDmg=cur.dmg*f.baseDmg+(cur.crit/100)*cur.critdmg*f.critDmgMult+cur.pen;
-    rows+=`<tr class="${isDanger?'danger-zone':''}"><td style="font-weight:600;">+${i}강${isDanger?' ⚠️':''}</td><td>${cur.dmg}</td><td>${cur.crit}%</td><td>${cur.critdmg}</td><td style="color:var(--accent);font-weight:600;">${cur.pen}</td><td>${cur.def}</td><td>${cur.hp}</td><td style="color:var(--warn);font-weight:600;">${avgDmg.toFixed(1)}</td><td style="font-size:12px;color:var(--text-muted);">${rate<100?rate+'%':'—'}</td></tr>`;
+    const hp = f.baseHp + (cur.life||0)*f.lifeMult;
+    const avgDmg=cur.dmg*f.baseDmg+(cur.crit/100)*cur.critdmg*f.critDmgMult+cur.pen*f.penMult;
+    rows+=`<tr class="${isDanger?'danger-zone':''}">
+      <td style="font-weight:600;">+${i}강${isDanger?' ⚠️':''}</td>
+      <td>${cur.dmg}</td>
+      <td>${cur.crit}%</td>
+      <td>${cur.critdmg}</td>
+      <td style="color:var(--accent);font-weight:600;">${cur.pen}</td>
+      <td>${cur.def}</td>
+      <td>${hp}</td>
+      <td style="color:var(--warn);font-weight:600;">${avgDmg.toFixed(1)}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${rate<100?rate+'%':'—'}</td>
+      <td>
+        <button onclick="sendUpgradeToSim(${i},'a')" style="background:rgba(74,158,255,0.15);border:1px solid #4a9eff44;color:#4a9eff;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;" title="A에 적용">A</button>
+        <button onclick="sendUpgradeToSim(${i},'b')" style="background:rgba(224,80,96,0.15);border:1px solid #e0506044;color:#e05060;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;" title="B에 적용">B</button>
+      </td>
+    </tr>`;
   }
-  document.getElementById('upgrade-result').innerHTML=`<div style="overflow-x:auto;"><table class="upgrade-table"><thead><tr><th>단계</th><th>타격</th><th>치명타</th><th>크리뎀</th><th>관통</th><th>방어도</th><th>HP</th><th>예상 DPS</th><th>성공률</th></tr></thead><tbody>${rows}</tbody></table></div>${breakAt>0?`<div style="margin-top:8px;font-size:12px;color:var(--red);">⚠️ +${breakAt}강 이상은 실패 시 파괴 위험</div>`:''}`;
+  document.getElementById('upgrade-result').innerHTML=`
+    <div style="overflow-x:auto;">
+    <table class="upgrade-table">
+      <thead><tr><th>단계</th><th>타격</th><th>치명타</th><th>크리뎀</th><th>관통</th><th>방어도</th><th>HP</th><th>예상 DPS</th><th>성공률</th><th>시뮬레이터</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${breakAt>0?`<div style="margin-top:8px;font-size:12px;color:var(--red);">⚠️ +${breakAt}강 이상은 실패 시 파괴 위험</div>`:''}
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">💡 A / B 버튼을 누르면 해당 강화 수치가 1v1 시뮬레이터로 바로 적용돼요.</div>
+  `;
+}
+
+function sendUpgradeToSim(stepIdx, side){
+  const step = window._upgradeSteps[stepIdx];
+  if(!step) return;
+  const f = getFormula();
+
+  document.getElementById(side+'-life').value    = step.life||0;
+  document.getElementById(side+'-dmg').value     = step.dmg||0;
+  document.getElementById(side+'-fatal').value   = step.fatal||0;
+  document.getElementById(side+'-crit').value    = step.crit||0;
+  document.getElementById(side+'-critdmg').value = step.critdmg||0;
+  document.getElementById(side+'-pen').value     = step.pen||0;
+  document.getElementById(side+'-def').value     = step.def||0;
+  document.getElementById(side+'-regen').value   = step.regen||0;
+
+  // 시뮬레이터 탭으로 이동
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-sim').classList.add('active');
+  document.querySelector('.nav-tab').classList.add('active');
+
+  // 알림
+  const sideLabel = side==='a'?'플레이어 A':'플레이어 B';
+  alert(`+${stepIdx}강 스탯이 ${sideLabel}에 적용됐어요!`);
 }
 
 // ===== ITEMS =====
@@ -998,18 +2228,89 @@ function addItem(){
     points:parseFloat(document.getElementById('item-points').value)||0,
   });
   ['item-name','item-life','item-dmg','item-fatal','item-crit','item-critdmg','item-pen','item-def','item-regen','item-points'].forEach(id=>document.getElementById(id).value='');
-  renderItems();refreshPresets();
+  renderItems();refreshPresets();saveToStorage();
 }
 
-function deleteItem(id){items=items.filter(i=>i.id!==id);renderItems();refreshPresets();}
+function deleteItem(id){items=items.filter(i=>i.id!==id);renderItems();refreshPresets();saveToStorage();}
 
 function renderItems(){
   const wrap=document.getElementById('items-list-wrap');
-  if(items.length===0){wrap.innerHTML='<div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 등록된 아이템이 없어요</div>';return;}
-  wrap.innerHTML='<div class="items-list">'+items.map(item=>{
-    const stats=[item.dmg?`<span class="stat-pill dmg">타격 +${item.dmg}</span>`:'',item.crit?`<span class="stat-pill crit">치명타 +${item.crit}%</span>`:'',item.critdmg?`<span class="stat-pill crit">크리뎀 +${item.critdmg}</span>`:'',item.pen?`<span class="stat-pill pen">관통 +${item.pen}</span>`:'',item.def?`<span class="stat-pill def">방어도 +${item.def}</span>`:''].filter(Boolean).join('');
-    return `<div class="item-row"><span class="tier-badge t-${item.tier}">${item.tier}</span><div class="item-name">${item.name} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${item.type}</span></div><div class="item-stats">${stats||'<span style="color:var(--text-dim);">스탯 없음</span>'}</div><button class="btn-danger" onclick="deleteItem(${item.id})">×</button></div>`;
-  }).join('')+'</div>';
+  if(items.length===0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--text-dim);padding:60px;font-size:13px;">아직 등록된 아이템이 없어요</div>';
+    return;
+  }
+
+  const tierColors = {
+    '일반':'#aaaaaa','고급':'#5555ff','희귀':'#aa00aa',
+    '영웅':'#ffaa00','전설':'#ff5500','서사':'#ff55ff'
+  };
+  const tierGlow = {
+    '일반':'rgba(170,170,170,0.15)','고급':'rgba(85,85,255,0.15)',
+    '희귀':'rgba(170,0,170,0.2)','영웅':'rgba(255,170,0,0.2)',
+    '전설':'rgba(255,85,0,0.25)','서사':'rgba(255,85,255,0.2)'
+  };
+
+  wrap.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">'+
+  items.map(item => {
+    const tc = tierColors[item.tier]||'#aaa';
+    const tg = tierGlow[item.tier]||'transparent';
+    const hp = 30 + (item.life||0);
+
+    const statLines = [
+      item.dmg     ? `<div style="color:#ffffff;">타격 <span style="color:#55ff55;">+${item.dmg}</span></div>` : '',
+      item.fatal   ? `<div style="color:#ffffff;">치명타 <span style="color:#ffaa00;">+${item.fatal}</span></div>` : '',
+      item.crit    ? `<div style="color:#ffffff;">크리티컬 확률 <span style="color:#ffaa00;">+${item.crit}%</span></div>` : '',
+      item.critdmg ? `<div style="color:#ffffff;">크리티컬 대미지 <span style="color:#ff5555;">+${item.critdmg}</span></div>` : '',
+      item.pen     ? `<div style="color:#ffffff;">관통 <span style="color:#aa00aa;font-weight:700;">+${item.pen}</span></div>` : '',
+      item.def     ? `<div style="color:#ffffff;">방어도 <span style="color:#5555ff;">+${item.def}</span></div>` : '',
+      item.life    ? `<div style="color:#ffffff;">생명 <span style="color:#55ff55;">+${item.life}</span> <span style="color:#888;">(HP ${hp})</span></div>` : '',
+      item.regen   ? `<div style="color:#ffffff;">재생 <span style="color:#55ffff;">+${item.regen}</span></div>` : '',
+    ].filter(Boolean).join('');
+
+    return `
+    <div style="
+      background:linear-gradient(160deg,#1a0a2e,#0d0d18);
+      border:2px solid ${tc};
+      border-radius:4px;
+      padding:12px 14px;
+      font-family:monospace;
+      font-size:12px;
+      box-shadow:0 0 16px ${tg}, inset 0 0 20px rgba(0,0,0,0.4);
+      position:relative;
+      overflow:hidden;
+    ">
+      <!-- 등급 빛 효과 -->
+      <div style="position:absolute;top:-20px;left:-20px;width:80px;height:80px;background:radial-gradient(circle,${tg},transparent);pointer-events:none;"></div>
+
+      <!-- 아이템명 -->
+      <div style="color:${tc};font-size:14px;font-weight:700;margin-bottom:2px;text-shadow:0 0 8px ${tc}88;">${item.name}</div>
+
+      <!-- 등급/종류 -->
+      <div style="color:#888888;font-size:11px;margin-bottom:8px;">${item.tier} ${item.type}</div>
+
+      <!-- 구분선 -->
+      <div style="height:1px;background:linear-gradient(90deg,transparent,${tc}66,transparent);margin-bottom:8px;"></div>
+
+      <!-- 스탯 -->
+      <div style="line-height:1.8;font-size:12px;">
+        ${statLines || '<div style="color:#555;">스탯 없음</div>'}
+      </div>
+
+      ${item.points ? `
+      <!-- 구분선 -->
+      <div style="height:1px;background:linear-gradient(90deg,transparent,${tc}44,transparent);margin:8px 0;"></div>
+      <div style="color:#888;font-size:11px;">포인트: <span style="color:#ffff55;">${item.points.toLocaleString()}</span></div>
+      ` : ''}
+
+      <!-- 삭제 버튼 -->
+      <button onclick="deleteItem(${item.id})" style="
+        position:absolute;top:8px;right:8px;
+        background:none;border:none;color:#555;
+        font-size:16px;cursor:pointer;line-height:1;
+        transition:color .15s;
+      " onmouseover="this.style.color='#ff5555'" onmouseout="this.style.color='#555'">×</button>
+    </div>`;
+  }).join('') + '</div>';
 }
 
 function refreshPresets(){
@@ -1029,9 +2330,69 @@ function exportItems(){
 function loadFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=evt=>{try{const data=JSON.parse(evt.target.result);if(data.items){items=data.items;renderItems();refreshPresets();}}catch{alert('올바른 JSON 파일이 아니에요');}};
+  reader.onload=evt=>{try{const data=JSON.parse(evt.target.result);if(data.items){items=data.items;renderItems();refreshPresets();saveToStorage();}}catch{alert('올바른 JSON 파일이 아니에요');}};
   reader.readAsText(file);e.target.value='';
 }
+
+// ===== localStorage 자동 저장/복원 =====
+function saveToStorage(){
+  try {
+    localStorage.setItem('pvp_items', JSON.stringify(items));
+    localStorage.setItem('pvp_history', JSON.stringify(battleHistory));
+    localStorage.setItem('pvp_formula', JSON.stringify({
+      baseDmg:    document.getElementById('f-base-dmg').value,
+      fatalDmg:   document.getElementById('f-fatal-dmg').value,
+      critDmgMult:document.getElementById('f-critdmg-mult').value,
+      penMult:    document.getElementById('f-pen-mult').value,
+      baseHp:     document.getElementById('f-base-hp').value,
+      lifeMult:   document.getElementById('f-life-mult').value,
+      defMult:    document.getElementById('f-def-mult').value,
+      regenMult:  document.getElementById('f-regen-mult').value,
+      regenCd:    document.getElementById('f-regen-cd').value,
+      fatalRate:  document.getElementById('f-fatal-rate').value,
+      critRate:   document.getElementById('f-crit-rate').value,
+    }));
+  } catch(e){ console.warn('저장 실패:', e); }
+}
+
+function loadFromStorage(){
+  try {
+    const savedItems = localStorage.getItem('pvp_items');
+    if(savedItems) items = JSON.parse(savedItems);
+
+    const savedHistory = localStorage.getItem('pvp_history');
+    if(savedHistory) battleHistory = JSON.parse(savedHistory);
+
+    const savedBalanceLog = localStorage.getItem('pvp_balancelog');
+    if(savedBalanceLog) balanceLog = JSON.parse(savedBalanceLog);
+
+    const savedFormula = localStorage.getItem('pvp_formula');
+    if(savedFormula){
+      const f = JSON.parse(savedFormula);
+      if(f.baseDmg)    document.getElementById('f-base-dmg').value     = f.baseDmg;
+      if(f.fatalDmg)   document.getElementById('f-fatal-dmg').value    = f.fatalDmg;
+      if(f.critDmgMult)document.getElementById('f-critdmg-mult').value = f.critDmgMult;
+      if(f.penMult)    document.getElementById('f-pen-mult').value      = f.penMult;
+      if(f.baseHp)     document.getElementById('f-base-hp').value       = f.baseHp;
+      if(f.lifeMult)   document.getElementById('f-life-mult').value     = f.lifeMult;
+      if(f.defMult)    document.getElementById('f-def-mult').value      = f.defMult;
+      if(f.regenMult)  document.getElementById('f-regen-mult').value    = f.regenMult;
+      if(f.regenCd)    document.getElementById('f-regen-cd').value      = f.regenCd;
+      if(f.fatalRate)  document.getElementById('f-fatal-rate').value    = f.fatalRate;
+      if(f.critRate)   document.getElementById('f-crit-rate').value     = f.critRate;
+    }
+
+    if(items.length > 0){ renderItems(); refreshPresets(); }
+  } catch(e){ console.warn('불러오기 실패:', e); }
+}
+
+// 공식 설정 변경 시 자동 저장
+document.querySelectorAll('#page-formula input').forEach(el => {
+  el.addEventListener('change', saveToStorage);
+});
+
+// 페이지 로드 시 복원
+loadFromStorage();
 
 // 초기 캐릭터 그리기는 CHAR_IMG.onload에서 처리
 </script>
